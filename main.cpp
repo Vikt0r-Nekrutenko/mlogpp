@@ -35,6 +35,15 @@ public:
     void print() const override { std::cout << "EqOp [" << "=" << "]" << std::endl; }
 };
 
+class AddOperatorToken : public Token
+{
+public:
+
+    std::string str() const override { return "+"; }
+
+    void print() const override { std::cout << "AddOp [" << "+" << "]" << std::endl; }
+};
+
 class NumberToken : public Token
 {
 public:
@@ -70,9 +79,10 @@ void readFile(const std::string &fileName)
                 std::stof(literal);
                 tokens.push_back(new NumberToken(literal));
             } catch(...) {
-
                 if(literal == "=") {
-                    tokens.push_back(new EqualOperatorToken());
+                    tokens.push_back(new EqualOperatorToken);
+                } else if(literal == "+") {
+                    tokens.push_back(new AddOperatorToken);
                 } else {
                     tokens.push_back(new VariableToken(literal));
                 }
