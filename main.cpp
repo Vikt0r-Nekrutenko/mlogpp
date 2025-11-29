@@ -59,15 +59,17 @@ private:
     std::string mValue;
 };
 
+using TokensLine = std::pair<size_t, std::vector<Token *>>;
+
 void readFile(const std::string &fileName)
 {
     std::string line;
     std::ifstream inputFile (fileName);
-    std::vector<std::vector<Token *>> tokens;
-    while ( getline (inputFile,line) )
-    {
-        tokens.push_back({});
-        std::vector<Token *> &tokensLine = tokens.back();
+    std::vector<TokensLine> tokens;
+    size_t lineN = 0;
+    while ( getline (inputFile,line) ) {
+        tokens.push_back({lineN++, {}});
+        std::vector<Token *> &tokensLine = tokens.back().second;
 
         std::cout << "Line: " << line << " size: " << line.size() << std::endl;
         std::string literal;
@@ -97,7 +99,8 @@ void readFile(const std::string &fileName)
     }
     std::cout << "Tokens: " << std::endl;
     for(const auto &tokenLine : tokens) {
-        for(const auto &token : tokenLine) {
+        std::cout << tokenLine.first << std::endl;
+        for(const auto &token : tokenLine.second) {
             token->print();
         }
         std::cout << std::endl;
