@@ -63,9 +63,12 @@ void readFile(const std::string &fileName)
 {
     std::string line;
     std::ifstream inputFile (fileName);
-    std::vector<Token *> tokens;
+    std::vector<std::vector<Token *>> tokens;
     while ( getline (inputFile,line) )
     {
+        tokens.push_back({});
+        std::vector<Token *> &tokensLine = tokens.back();
+
         std::cout << "Line: " << line << " size: " << line.size() << std::endl;
         std::string literal;
         size_t i = 0;
@@ -77,14 +80,14 @@ void readFile(const std::string &fileName)
 
             try {
                 std::stof(literal);
-                tokens.push_back(new NumberToken(literal));
+                tokensLine.push_back(new NumberToken(literal));
             } catch(...) {
                 if(literal == "=") {
-                    tokens.push_back(new EqualOperatorToken);
+                    tokensLine.push_back(new EqualOperatorToken);
                 } else if(literal == "+") {
-                    tokens.push_back(new AddOperatorToken);
+                    tokensLine.push_back(new AddOperatorToken);
                 } else {
-                    tokens.push_back(new VariableToken(literal));
+                    tokensLine.push_back(new VariableToken(literal));
                 }
             }
             std::cout << literal << std::endl;
@@ -93,8 +96,11 @@ void readFile(const std::string &fileName)
         }
     }
     std::cout << "Tokens: " << std::endl;
-    for(const auto &token : tokens) {
-        token->print();
+    for(const auto &tokenLine : tokens) {
+        for(const auto &token : tokenLine) {
+            token->print();
+        }
+        std::cout << std::endl;
     }
     inputFile.close();
 }
