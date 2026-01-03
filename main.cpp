@@ -1,128 +1,54 @@
 #include <iostream>
-#include <fstream>
+#include <string>
 #include <vector>
 
-class Token
+enum class NodeType {Variable, Number, Operator, Assigment};
+
+struct ASTNode
 {
-public:
+    NodeType type;
+    std::string value;
+    ASTNode *left = nullptr;
+    ASTNode *right = nullptr;
 
-    virtual std::string str() const { return ""; }
-
-    virtual void print() const = 0;
+    ASTNode(NodeType t, const std::string &s) : type{t}, value{s} {}
 };
 
-class VariableToken : public Token
+struct Token
 {
-public:
-
-    VariableToken(const std::string &name) : mVariableName{name} { }
-
-    std::string str() const override { return mVariableName; }
-
-    void print() const override { std::cout << "Var[" << mVariableName << "]" << std::endl; }
-
-private:
-
-    std::string mVariableName;
+    std::string value;
+    bool isOperator;
 };
 
-class EqualOperatorToken : public Token
+std::vector<Token> tokenize(const std::string &expression)
 {
-public:
-
-    std::string str() const override { return "="; }
-
-    void print() const override { std::cout << "EqOp [" << "=" << "]" << std::endl; }
-};
-
-class AddOperatorToken : public Token
-{
-public:
-
-    std::string str() const override { return "+"; }
-
-    void print() const override { std::cout << "AddOp [" << "+" << "]" << std::endl; }
-};
-
-class NumberToken : public Token
-{
-public:
-
-    NumberToken(const std::string &value) : mValue{value} { }
-
-    std::string str() const override { return mValue; }
-
-    void print() const override { std::cout << "Num[" << mValue << "]" << std::endl; }
-
-private:
-
-    std::string mValue;
-};
-
-using TokensLine = std::pair<size_t, std::vector<Token *>>;
-
-void readFile(const std::string &fileName)
-{
-    std::string line;
-    std::ifstream inputFile (fileName);
-    std::vector<TokensLine> tokens;
-    size_t lineN = 0;
-    while ( getline (inputFile,line) ) {
-        tokens.push_back({lineN++, {}});
-        std::vector<Token *> &tokensLine = tokens.back().second;
-
-        std::cout << "Line: " << line << " size: " << line.size() << std::endl;
-        std::string literal;
-        size_t i = 0;
-        while(i < line.size()) {
-            while(line[i] != ' ' && line[i] != '\n' && line[i] != 0) {
-                literal.push_back(line[i]);
-                ++i;
+    std::vector<Token> tokens;
+    std::string buffer;
+    for(size_t i = 0; i < expression.length(); ++i) {
+        if(std::isspace(expression[i]))
+            continue;
+        if(std::ispunct(expression[i]) && expression[i] != '_') {
+            if(!buffer.empty()) {
+                tokens.push_back({buffer, false});
+                buffer.clear();
             }
-
-            try {
-                std::stof(literal);
-                tokensLine.push_back(new NumberToken(literal));
-            } catch(...) {
-                if(literal == "=") {
-                    tokensLine.push_back(new EqualOperatorToken);
-                } else if(literal == "+") {
-                    tokensLine.push_back(new AddOperatorToken);
-                } else {
-                    tokensLine.push_back(new VariableToken(literal));
-                }
-            }
-            std::cout << literal << std::endl;
-            literal.clear();
-            ++i;
+            tokens.push_back({std::string(1 , expression[i]), true});
+        } else {
+            buffer += expression[i];
         }
     }
-    std::cout << "Tokens: " << std::endl;
-    for(const auto &tokenLine : tokens) {
-        std::cout << tokenLine.first << std::endl;
-        for(const auto &token : tokenLine.second) {
-            token->print();
-        }
-        std::cout << std::endl;
+    if(!buffer.empty()) {
+        tokens.push_back({buffer, false});
     }
-    inputFile.close();
+    return tokens;
 }
 
-int main(int argc, char **argv)
+int main()
 {
-    std::string fileName;
-    if(argc == 2) {
-        std::cout << argv[1] << std::endl;
-        fileName = argv[1];
+    std::string line = "a = 5 + 2 * 2";
+    auto tokens = tokenize(line);
+    for(const auto &token : tokens) {
+        std::cout << token.value << " " << token.isOperator << std::endl;
     }
-
-    readFile(fileName);
-
-    *(fileName.end() - 3) = 't';
-    *(fileName.end() - 2) = 'x';
-    *(fileName.end() - 1) = 't';
-
-    // std::ofstream rfile(fileName);
-    // rfile.close();
     return 0;
 }
