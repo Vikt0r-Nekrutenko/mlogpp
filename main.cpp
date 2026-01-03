@@ -43,6 +43,32 @@ std::vector<Token> tokenize(const std::string &expression)
     return tokens;
 }
 
+class Parser
+{
+    std::vector<Token> mTokens;
+    int mPos = 0;
+
+    Token peek() { return mTokens[mPos]; }
+
+    Token consume() { return mTokens[mPos++]; }
+
+public:
+
+    Parser(const std::vector<Token> &t) : mTokens{t} {}
+
+    ASTNode *parse()
+    {
+        auto left = new ASTNode(NodeType::Variable, consume().value);
+        consume();
+        auto root = new ASTNode(NodeType::Assigment, "=");
+
+        root->left = std::move(left);
+        // root->right = parseExpression(0);
+
+        return root;
+    }
+};
+
 int main()
 {
     std::string line = "a = 5 + 2 * 2";
