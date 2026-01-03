@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -108,6 +109,41 @@ public:
     }
 };
 
+class Generator
+{
+    size_t mNReg = 0;
+
+    std::string getOpName(const std::string &op)
+    {
+        if(op == "+") return "add";
+        else if(op == "-") return "sub";
+        else if(op == "*") return "mul";
+        else if(op == "/") return "div";
+        return "op";
+    }
+
+public:
+
+    std::string generate(ASTNode *node)
+    {
+        if(node->type == NodeType::Number || node->type == NodeType::Variable)
+            return node->value;
+        if(node->type == NodeType::Assigment) {
+            std::string value = generate(node->right);
+            std::cout << "set " << node->left->value << " " << value << std::endl;
+            return node->left->value;
+        }
+        if(node->type == NodeType::Operator) {
+            std::string leftValue = generate(node->left);
+            std::string rightValue = generate(node->right);
+            std::string resultVariable = "T" + std::to_string(mNReg++);
+            std::cout << "op " << getOpName(node->value) << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+            return resultVariable;
+        }
+        return "";
+    }
+};
+
 int main()
 {
     std::string line = "a = 5 + 2 * 2";
@@ -116,6 +152,6 @@ int main()
         std::cout << token.value << " " << token.isOperator << std::endl;
     }
     auto ast = Parser(tokens).parse();
-    ast->print();
+    Generator().generate(ast);
     return 0;
 }
