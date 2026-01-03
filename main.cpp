@@ -65,7 +65,7 @@ class Parser
     std::vector<Token> mTokens;
     size_t mPos = 0;
 
-    Token peek() { return mTokens[mPos]; }
+    Token peek() { return mPos < mTokens.size() ? mTokens[mPos] : Token{"", false}; }
 
     Token consume() { return mTokens[mPos++]; }
 
@@ -81,8 +81,12 @@ class Parser
     ASTNode *parseExpression(int minPrec)
     {
         auto left = parsePrimary();
-        while(mPos < mTokens.size() && precedence(mTokens[mPos].value) >= minPrec) {
-            Token op = consume();
+        while(mPos < mTokens.size())// && peek().isOperator && precedence(peek().value) >= minPrec)
+        {
+            Token op = peek();
+            if(op.value == ")" || precedence(op.value) < minPrec)
+                break;
+            consume();
             auto node = new ASTNode(NodeType::Operator, op.value);
             node->left = std::move(left);
             node->right = parseExpression(precedence(op.value) + 1);
@@ -94,6 +98,11 @@ class Parser
     ASTNode *parsePrimary()
     {
         Token t = consume();
+        if(t.value == "(") {
+            auto node = parseExpression(0);
+            consume();
+            return node;
+        }
         if(std::isdigit(t.value[0]))
             return new ASTNode(NodeType::Number, t.value);
         return new ASTNode(NodeType::Variable, t.value);
@@ -133,6 +142,7 @@ public:
 
     std::string generate(ASTNode *node)
     {
+        if(!node) return "";
         if(node->type == NodeType::Number || node->type == NodeType::Variable)
             return node->value;
         if(node->type == NodeType::Assigment) {
@@ -153,12 +163,13 @@ public:
 
 int main()
 {
-    std::string line = "a = 5 * (2 - 2)";
+    std::string line = "a = (5 + 2 * 2)";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
         std::cout << token.value << " " << token.isOperator << std::endl;
     }
-    // auto ast = Parser(tokens).parse();
-    // Generator().generate(ast);
+    auto ast = Parser(tokens).parse();
+    ast->print();
+    Generator().generate(ast);
     return 0;
 }
