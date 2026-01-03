@@ -33,22 +33,29 @@ struct Token
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-    std::string buffer;
     for(size_t i = 0; i < expression.length(); ++i) {
         if(std::isspace(expression[i]))
             continue;
-        if(std::ispunct(expression[i]) && expression[i] != '_') {
-            if(!buffer.empty()) {
-                tokens.push_back({buffer, false});
-                buffer.clear();
-            }
-            tokens.push_back({std::string(1 , expression[i]), true});
-        } else {
-            buffer += expression[i];
+        switch(expression[i]) {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '(':
+        case ')':
+        case '=':
+            tokens.push_back({std::string(1, expression[i]), true});
+            continue;
         }
-    }
-    if(!buffer.empty()) {
-        tokens.push_back({buffer, false});
+
+        std::string buffer;
+        while(i < expression.length() && (std::isalnum(expression[i]) || expression[i] == '_')) {
+            buffer += expression[i++];
+        }
+        if(!buffer.empty()) {
+            tokens.push_back({buffer, false});
+            i--;
+        }
     }
     return tokens;
 }
@@ -146,12 +153,12 @@ public:
 
 int main()
 {
-    std::string line = "a = 5 + 2 * 2";
+    std::string line = "a = 5 * (2 - 2)";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
         std::cout << token.value << " " << token.isOperator << std::endl;
     }
-    auto ast = Parser(tokens).parse();
-    Generator().generate(ast);
+    // auto ast = Parser(tokens).parse();
+    // Generator().generate(ast);
     return 0;
 }
