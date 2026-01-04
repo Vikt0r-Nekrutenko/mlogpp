@@ -1,4 +1,5 @@
 #include <iostream>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,14 @@ struct ASTNodeOperator : public ASTNode
         else if(value == "-") return "op sub";
         else if(value == "*") return "op mul";
         else if(value == "/") return "op div";
+        else if(value == "<") return "op lessThan";
+        else if(value == ">") return "op greaterThan";
+        else if(value == "<=") return "op lessThanEq";
+        else if(value == ">=") return "op greaterThanEq";
+        else if(value == "==") return "op strictEqual";
+        else if(value == "!=") return "op notEqual";
+        else if(value == "&&") return "op land";
+        else if(value == "||") return "op or";
         return value;
     }
 };
@@ -39,29 +48,14 @@ struct Token
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-    for(size_t i = 0; i < expression.length(); ++i) {
-        if(std::isspace(expression[i]))
-            continue;
-        switch(expression[i]) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '(':
-        case ')':
-        case '=':
-            tokens.push_back({std::string(1, expression[i]), true});
-            continue;
-        }
+    const std::regex pattern(R"(([\d]+)|([a-zA-Z_][\w]*)|(!=|==|<=|>=|&&|\|\||[\+\-\/\*\=\(\)\<\>\&\|\%]))");
+    auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
+    auto wordEnd = std::sregex_iterator();
+    for(auto i = wordsBegin; i != wordEnd; ++i) {
+        std::smatch match = *i;
+        std::string value = match.str();
 
-        std::string buffer;
-        while(i < expression.length() && (std::isalnum(expression[i]) || expression[i] == '_')) {
-            buffer += expression[i++];
-        }
-        if(!buffer.empty()) {
-            tokens.push_back({buffer, false});
-            i--;
-        }
+        tokens.push_back({value, match[3].matched});
     }
     return tokens;
 }
@@ -77,10 +71,18 @@ class Parser
 
     int precedence(const std::string &op)
     {
-        if(op == "+" || op == "-")
-            return 1;
-        else if(op == "*" || op == "/")
+        if(op == "*" || op == "/" || op == "%")
+            return 6;
+        else if(op == "+" || op == "-")
+            return 5;
+        else if(op == "<" || op == ">" || op == "<=" || op == ">=")
+            return 4;
+        else if(op == "==" || op == "!=")
+            return 3;
+        else if(op == "&" || op == "|")
             return 2;
+        else if(op == "&&" || op == "||")
+            return 1;
         return 0;
     }
 
@@ -159,13 +161,15 @@ public:
 
 int main()
 {
-    std::string line = "a = 5 + 5 * 2";
+    std::string line = "a = ((x < w && y < h) && (x >= 0 && y >= 0))";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
-        std::cout << token.value << " " << token.isOperator << std::endl;
-    }
+        // std::cout << token.value << " " << token.isOperator << std::endl;
+        std::cout << token.value << "_";
+    } std::cout << std::endl;
     auto ast = Parser(tokens).parse();
     Generator().generate(ast);
+
     return 0;
 }
 /**
@@ -174,6 +178,8 @@ int main()
  * op lessThanEq _reg1 a b
  * op greaterThanEq _reg1 a b
  * op strictEqual _reg1 a b
+ * op land r a b
+ * op or r a b
 
 op strictEqual _reg1 1 2
 jump ELSE1 notEqual _reg1 true
