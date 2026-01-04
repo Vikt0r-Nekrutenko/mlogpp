@@ -14,13 +14,20 @@ struct ASTNode
 
     ASTNode(NodeType t, const std::string &s) : type{t}, value{s} {}
 
-    void print()
+    virtual std::string getMlogValue() const { return value; }
+};
+
+struct ASTNodeOperator : public ASTNode
+{
+    ASTNodeOperator(const std::string &s) : ASTNode(NodeType::Operator, s) {}
+
+    std::string getMlogValue() const override
     {
-        std::cout << value << " L: ";
-        if(left != nullptr) left->print();
-        std::cout << " R: ";
-        if(right != nullptr) right->print();
-        std::cout << std::endl;
+        if(value == "+") return "op add";
+        else if(value == "-") return "op sub";
+        else if(value == "*") return "op mul";
+        else if(value == "/") return "op div";
+        return value;
     }
 };
 
@@ -81,13 +88,12 @@ class Parser
     ASTNode *parseExpression(int minPrec)
     {
         auto left = parsePrimary();
-        while(mPos < mTokens.size())// && peek().isOperator && precedence(peek().value) >= minPrec)
-        {
+        while(mPos < mTokens.size()){
             Token op = peek();
             if(op.value == ")" || precedence(op.value) < minPrec)
                 break;
             consume();
-            auto node = new ASTNode(NodeType::Operator, op.value);
+            auto node = new ASTNodeOperator(op.value);
             node->left = std::move(left);
             node->right = parseExpression(precedence(op.value) + 1);
             left = std::move(node);
@@ -129,20 +135,11 @@ class Generator
 {
     size_t mNReg = 0;
 
-    std::string getOpName(const std::string &op)
-    {
-        if(op == "+") return "add";
-        else if(op == "-") return "sub";
-        else if(op == "*") return "mul";
-        else if(op == "/") return "div";
-        return "op";
-    }
-
 public:
 
     std::string generate(ASTNode *node)
     {
-        if(!node) return "";
+        if(node == nullptr) return "";
         if(node->type == NodeType::Number || node->type == NodeType::Variable)
             return node->value;
         if(node->type == NodeType::Assigment) {
@@ -154,7 +151,7 @@ public:
             std::string leftValue = generate(node->left);
             std::string rightValue = generate(node->right);
             std::string resultVariable = "T" + std::to_string(mNReg++);
-            std::cout << "op " << getOpName(node->value) << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+            std::cout << node->getMlogValue() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
             return resultVariable;
         }
         return "";
@@ -163,13 +160,34 @@ public:
 
 int main()
 {
-    std::string line = "a = (5 + 2 * 2)";
+    std::string line = "a = 5 + 5 * 2";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
         std::cout << token.value << " " << token.isOperator << std::endl;
     }
     auto ast = Parser(tokens).parse();
-    ast->print();
     Generator().generate(ast);
     return 0;
 }
+/**
+ * op lessThan _reg1 a b
+ * op greaterThan _reg1 a b
+ * op lessThanEq _reg1 a b
+ * op greaterThanEq _reg1 a b
+ * op strictEqual _reg1 a b
+
+op strictEqual _reg1 1 2
+jump ELSE1 notEqual _reg1 true
+op add a 2 2
+jump ENDIF1 always
+ELSE1:
+op add a 1 1
+ENDIF1:
+set b 0
+
+if(1 == 2) {
+    a = 2 + 2
+} else {
+    a = 1 + 1
+}
+*/
