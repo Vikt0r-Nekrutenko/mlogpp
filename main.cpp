@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-enum class NodeType {Variable, Number, Operator, Assigment};
+enum class NodeType {Variable, Number, Operator, Assigment, Keyword};
 
 struct ASTNode
 {
@@ -55,6 +55,10 @@ std::vector<Token> tokenize(const std::string &expression)
         std::smatch match = *i;
         std::string value = match.str();
 
+        // if(match[2].matched) {
+        //     std::string keyword = match[2].str();
+        //     if(keyword == "if")
+        // }
         tokens.push_back({value, match[3].matched});
     }
     return tokens;
@@ -121,6 +125,14 @@ public:
 
     ASTNode *parse()
     {
+        if(consume().value == "if") {
+            // auto left = new ASTNode(NodeType::Variable, "_reg1");
+            consume();
+            auto root = new ASTNode(NodeType::Keyword, "if");
+            // root->left = std::move(left);
+            root->right = parseExpression(0);
+            return root;
+        }
         auto left = new ASTNode(NodeType::Variable, consume().value);
         consume();
         auto root = new ASTNode(NodeType::Assigment, "=");
@@ -155,13 +167,18 @@ public:
             std::cout << node->getMlogValue() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
             return resultVariable;
         }
+        if(node->type == NodeType::Keyword) {
+            std::string value = generate(node->right);
+            std::cout << "jump ??? notEqual " << value << " true" << std::endl;
+            return "";
+        }
         return "";
     }
 };
 
 int main()
 {
-    std::string line = "a = ((x < w && y < h) && (x >= 0 && y >= 0))";
+    std::string line = "if(1 == 2 || 2 != 3)";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
         // std::cout << token.value << " " << token.isOperator << std::endl;
