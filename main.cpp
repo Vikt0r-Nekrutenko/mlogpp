@@ -27,6 +27,14 @@ struct ASTNodeOperator : public ASTNode
         else if(value == "-") return "op sub";
         else if(value == "*") return "op mul";
         else if(value == "/") return "op div";
+        else if(value == "<") return "op lessThan";
+        else if(value == ">") return "op greaterThan";
+        else if(value == "<=") return "op lessThanEq";
+        else if(value == ">=") return "op greaterThanEq";
+        else if(value == "==") return "op strictEqual";
+        else if(value == "!=") return "op notEqual";
+        else if(value == "&&") return "op land";
+        else if(value == "||") return "op or";
         return value;
     }
 };
@@ -153,14 +161,14 @@ public:
 
 int main()
 {
-    std::string line = "a = (5 + a_b) == 2<=54&1";
+    std::string line = "a = ((x < w && y < h) && (x >= 0 && y >= 0))";
     auto tokens = tokenize(line);
     for(const auto &token : tokens) {
         // std::cout << token.value << " " << token.isOperator << std::endl;
         std::cout << token.value << "_";
     } std::cout << std::endl;
-    // auto ast = Parser(tokens).parse();
-    // Generator().generate(ast);
+    auto ast = Parser(tokens).parse();
+    Generator().generate(ast);
 
     return 0;
 }
@@ -170,6 +178,8 @@ int main()
  * op lessThanEq _reg1 a b
  * op greaterThanEq _reg1 a b
  * op strictEqual _reg1 a b
+ * op land r a b
+ * op or r a b
 
 op strictEqual _reg1 1 2
 jump ELSE1 notEqual _reg1 true
