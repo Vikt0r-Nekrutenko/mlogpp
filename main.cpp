@@ -62,6 +62,15 @@ struct ASTBlock : public ASTNode
 {
   ASTBlock() : ASTNode{Token{"", Type::BlockStart}} {}
   std::vector<ASTNode*> childs;
+};
+
+struct ASTIfBlock : public ASTBlock
+{
+  ASTIfBlock() : ASTBlock() 
+  {
+    token.type = Type::KeywordIf;
+    token.value = "if";
+  }
   std::string label;
 };
 
@@ -175,13 +184,15 @@ public:
         return mainBlock; // main block
       
       if(peek().type == Type::KeywordIf) {
-          mainBlock->childs.push_back(new ASTNode(Token{"if", Type::KeywordIf}));
-          auto ifBlock = mainBlock->childs.back();
+          mainBlock->childs.push_back(new ASTIfBlock);
+          blocks.push(static_cast<ASTBlock*>(mainBlock->childs.back()));
+          mainBlock = blocks.top();
           consume();
           
-          ifBlock->left = parseExpression(0);
-          labelForNextBlock = std::string("ENDIF_") + std::to_string(mIfLblN++);
-          //root->right = parseExpression(0);
+          mainBlock->left = parseExpression(0);
+          consume();
+          
+          static_cast<ASTIfBlock*>(mainBlock)->label = std::string("ENDIF_") + std::to_string(mIfLblN++);
       }
       
       if(peek().type == Type::BlockStart) {
@@ -189,10 +200,6 @@ public:
           mainBlock->childs.push_back(new ASTBlock);
           blocks.push(static_cast<ASTBlock*>(mainBlock->childs.back()));
           mainBlock = blocks.top();
-          if(!labelForNextBlock.empty()) {
-            mainBlock->label = labelForNextBlock;
-            labelForNextBlock.clear();
-          }
         } else {
           mainBlock = new ASTBlock;
           blocks.push(mainBlock);
@@ -243,17 +250,19 @@ public:
             std::string leftValue = generate(node->left);
             //std::string rightValue = generate(node->right);
             //std::string resultVariable = "T" + std::to_string(mNReg++);
-            std::cout << "jump ??? notEqual "  << leftValue << " true" << std::endl;
+            std::cout << "jump " << static_cast<ASTIfBlock*>(node)->label << " notEqual "  << leftValue << " true" << std::endl;
             //for(auto ch : static_cast<ASTBlock*>(node)->childs) {
             //  generate(ch);
             //}
+            for(auto ch : static_cast<ASTIfBlock*>(node)->childs) {
+              generate(ch);
+            }
+            std::cout << static_cast<ASTIfBlock*>(node)->label << ":" << std::endl;
         }
         if(node->token.type == Type::BlockStart) {
           for(auto ch : static_cast<ASTBlock*>(node)->childs) {
             generate(ch);
           }
-          if(!static_cast<ASTBlock*>(node)->label.empty())
-            std::cout << static_cast<ASTBlock*>(node)->label << std::endl;
         }
         return "";
     }
@@ -273,8 +282,12 @@ int main()
     /*for(const auto &token : tokens) {
         std::cout << token.value << " " << token.typeName() << std::endl;
     }*/
+    try{
     auto ast = Parser(tokens).parse();
     Generator().generate(ast);
+    }catch(const Token &t){
+      std::cout<<"\t"<<t.value<<std::endl;
+    }
     
     return 0;
 }
