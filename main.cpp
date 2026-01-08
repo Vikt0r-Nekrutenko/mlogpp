@@ -2,8 +2,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <stack>
+#include <queue>
 
-enum class Type {Variable, Number, Operator, Assigment};
+enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, Keyword, KeywordIf};
+
+const std::vector<std::string> Keywords {
+  "and", "or", "if", "while",
+};
 
 struct Token
 {
@@ -26,6 +32,9 @@ struct Token
         case Type::Number: return "Number";
         case Type::Assigment: return "Assigment";
         case Type::Operator: return "Operator";
+        case Type::BlockStart: return "BlockStart";
+        case Type::BlockEnd: return "BlockEnd";
+        case Type::Keyword: return "Keyword";
         default: return "None";
       }
     }
@@ -49,6 +58,26 @@ struct ASTNode
     ASTNode(const Token &t) : token{t} {}
 };
 
+struct ASTBlock : public ASTNode
+{
+  ASTBlock() : ASTNode{Token{"", Type::BlockStart}} {}
+  std::vector<ASTNode*> childs;
+  std::string label;
+};
+
+Token tokenizeKeywords(const std::string &s)
+{
+  auto keywordIt = find_if(Keywords.begin(), Keywords.end(), [&](const std::string &keyword) {
+    return s == keyword ? true : false;
+  });
+  if(keywordIt != Keywords.end()) {
+    if(*keywordIt == "if")
+      return {s, Type::KeywordIf};
+    return {s, Type::Keyword};
+  }
+  return {s, Type::Variable};
+}
+
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
@@ -67,6 +96,15 @@ std::vector<Token> tokenize(const std::string &expression)
         case '=':
           tokens.push_back({std::string(1, expression[i]), Type::Assigment});
             break;
+        case '{':
+          tokens.push_back({std::string(1, expression[i]), Type::BlockStart});
+          break;
+        case '}':
+          tokens.push_back({std::string(1, expression[i]), Type::BlockEnd});
+          break;
+        case ';':
+          tokens.push_back({std::string(1, expression[i]), Type::Endl});
+          break;
         }
 
         std::string buffer;
@@ -77,7 +115,7 @@ std::vector<Token> tokenize(const std::string &expression)
           if(std::isdigit(buffer[0])) {
             tokens.push_back({buffer, Type::Number});
           } else {
-            tokens.push_back({buffer, Type::Variable});
+            tokens.push_back(tokenizeKeywords(buffer));
           }
           i--;
         }
@@ -88,27 +126,26 @@ std::vector<Token> tokenize(const std::string &expression)
 class Parser
 {
     std::vector<Token> mTokens;
+    std::stack<ASTBlock *> blocks;
+    std::string labelForNextBlock = "";
+    ASTBlock *mainBlock = nullptr;
     size_t mPos = 0;
+    size_t mIfLblN = 0;
 
     Token peek() { return mTokens[mPos]; }
 
     Token consume() { return mTokens[mPos++]; }
 
-    int precedence(const std::string &op)
-    {
-        if(op == "+" || op == "-")
-            return 1;
-        else if(op == "*" || op == "/")
-            return 2;
-        return 0;
-    }
-
     ASTNode *parseExpression(int minPrec)
     {
         auto left = parsePrimary();
-        while(mPos < mTokens.size() && mTokens[mPos].precedence() >= minPrec) {
+        while(mPos < mTokens.size() && 
+        peek().type != Type::Endl &&
+        peek().type != Type::BlockStart &&
+        peek().type != Type::BlockEnd &&
+        mTokens[mPos].precedence() >= minPrec) {
             Token operatr = consume();
-            if(operatr.value == ")"){
+            if(operatr.value == ")") {
               break;
             }
             auto node = new ASTNode(operatr);
@@ -134,13 +171,48 @@ public:
 
     ASTNode *parse()
     {
+      if(mPos >= mTokens.size() - 1)
+        return mainBlock; // main block
+      
+      if(peek().type == Type::KeywordIf) {
+          mainBlock->childs.push_back(new ASTNode(Token{"if", Type::KeywordIf}));
+          auto ifBlock = mainBlock->childs.back();
+          consume();
+          
+          ifBlock->left = parseExpression(0);
+          labelForNextBlock = std::string("ENDIF_") + std::to_string(mIfLblN++);
+          //root->right = parseExpression(0);
+      }
+      
+      if(peek().type == Type::BlockStart) {
+        if(mainBlock != nullptr) {
+          mainBlock->childs.push_back(new ASTBlock);
+          blocks.push(static_cast<ASTBlock*>(mainBlock->childs.back()));
+          mainBlock = blocks.top();
+          if(!labelForNextBlock.empty()) {
+            mainBlock->label = labelForNextBlock;
+            labelForNextBlock.clear();
+          }
+        } else {
+          mainBlock = new ASTBlock;
+          blocks.push(mainBlock);
+        }
+        consume();
+      } else if (peek().type == Type::BlockEnd && blocks.size() > 1) {
+          blocks.pop();
+          mainBlock = blocks.top();
+          consume();
+      } else if (peek().type == Type::Endl) {
+        consume();
+      } else if (peek().type == Type::Variable || peek().type == Type::Assigment) {
         auto left = new ASTNode(consume()); //var
         auto root = new ASTNode(consume()); //assigment
 
         root->left = std::move(left);
         root->right = parseExpression(0);
-
-        return root;
+        mainBlock->childs.push_back(root);
+      }
+      return parse();
     }
 };
 
@@ -152,6 +224,7 @@ public:
 
     std::string generate(ASTNode *node)
     {
+      if(node == nullptr) return  "";
         if(node->token.type== Type::Number || node->token.type== Type::Variable)
             return node->token.value;
         if(node->token.type== Type::Assigment) {
@@ -166,18 +239,42 @@ public:
             std::cout << "op " << node->token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
             return resultVariable;
         }
+        if(node->token.type == Type::KeywordIf) {
+            std::string leftValue = generate(node->left);
+            //std::string rightValue = generate(node->right);
+            //std::string resultVariable = "T" + std::to_string(mNReg++);
+            std::cout << "jump ??? notEqual "  << leftValue << " true" << std::endl;
+            //for(auto ch : static_cast<ASTBlock*>(node)->childs) {
+            //  generate(ch);
+            //}
+        }
+        if(node->token.type == Type::BlockStart) {
+          for(auto ch : static_cast<ASTBlock*>(node)->childs) {
+            generate(ch);
+          }
+          if(!static_cast<ASTBlock*>(node)->label.empty())
+            std::cout << static_cast<ASTBlock*>(node)->label << std::endl;
+        }
         return "";
     }
 };
-
+#include <fstream>
 int main()
 {
-    std::string line = "a = (2 - 2) * (6-4) b = 8 * 4";
-    auto tokens = tokenize(line);
-    for(const auto &token : tokens) {
-        std::cout << token.value << " " << token.typeName() << std::endl;
+  std::vector<Token> tokens;
+    std::ifstream file("test.mlogpp");
+    
+    while(!file.eof()) {
+      std::string txt;
+      file >> txt;
+      auto tmptokens = tokenize(txt);
+      tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
     }
+    /*for(const auto &token : tokens) {
+        std::cout << token.value << " " << token.typeName() << std::endl;
+    }*/
     auto ast = Parser(tokens).parse();
     Generator().generate(ast);
+    
     return 0;
 }
