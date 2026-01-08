@@ -71,7 +71,7 @@ struct ASTIfBlock : public ASTBlock
     token.type = Type::KeywordIf;
     token.value = "if";
   }
-  std::string label;
+  std::string label, label1;
 };
 
 Token tokenizeKeywords(const std::string &s)
@@ -192,7 +192,7 @@ public:
           mainBlock->left = parseExpression(0);
           consume();
           
-          static_cast<ASTIfBlock*>(mainBlock)->label = std::string("ENDIF_") + std::to_string(mIfLblN++);
+          static_cast<ASTIfBlock*>(mainBlock)->label = static_cast<ASTIfBlock*>(mainBlock)->label1 = std::string("ENDIF_") + std::to_string(mIfLblN++);
       }
       
       if(peek().type == Type::BlockStart) {
@@ -257,7 +257,7 @@ public:
             for(auto ch : static_cast<ASTIfBlock*>(node)->childs) {
               generate(ch);
             }
-            std::cout << static_cast<ASTIfBlock*>(node)->label << ":" << std::endl;
+            std::cout << static_cast<ASTIfBlock*>(node)->label1 << ":" << std::endl;
         }
         if(node->token.type == Type::BlockStart) {
           for(auto ch : static_cast<ASTBlock*>(node)->childs) {
