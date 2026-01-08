@@ -5,10 +5,10 @@
 #include <stack>
 #include <queue>
 
-enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, Keyword, KeywordIf};
+enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, Keyword, KeywordIf, KeywordElse};
 
 const std::vector<std::string> Keywords {
-  "and", "or", "if", "while",
+  "and", "or", "if", "else", "while",
 };
 
 struct Token
@@ -60,7 +60,7 @@ struct ASTNode
 
 struct ASTBlock : public ASTNode
 {
-  ASTBlock() : ASTNode{Token{"", Type::BlockStart}} {}
+  ASTBlock() : ASTNode{Token{"{", Type::BlockStart}} {}
   std::vector<ASTNode*> childs;
 };
 
@@ -74,6 +74,16 @@ struct ASTIfBlock : public ASTBlock
   std::string label, label1;
 };
 
+struct ASTElseBlock : public ASTBlock
+{
+  ASTElseBlock() : ASTBlock() 
+  {
+    token.type = Type::KeywordElse;
+    token.value = "else";
+  }
+  std::string label, label1;
+};
+
 Token tokenizeKeywords(const std::string &s)
 {
   auto keywordIt = find_if(Keywords.begin(), Keywords.end(), [&](const std::string &keyword) {
@@ -82,6 +92,8 @@ Token tokenizeKeywords(const std::string &s)
   if(keywordIt != Keywords.end()) {
     if(*keywordIt == "if")
       return {s, Type::KeywordIf};
+    if(*keywordIt == "else")
+      return {s, Type::KeywordElse};
     return {s, Type::Keyword};
   }
   return {s, Type::Variable};
@@ -136,7 +148,7 @@ class Parser
 {
     std::vector<Token> mTokens;
     std::stack<ASTBlock *> blocks;
-    std::string labelForNextBlock = "";
+    ASTIfBlock *lastIfBlock = nullptr;
     ASTBlock *mainBlock = nullptr;
     size_t mPos = 0;
     size_t mIfLblN = 0;
@@ -180,9 +192,23 @@ public:
 
     ASTNode *parse()
     {
-      if(mPos >= mTokens.size() - 1)
+      if(mPos >= mTokens.size())
         return mainBlock; // main block
       
+      if(peek().type == Type::KeywordElse) {
+        if(mainBlock->childs.back()->token.type == Type::KeywordIf){
+          lastIfBlock = static_cast<ASTIfBlock*>(mainBlock->childs.back());
+        
+        mainBlock->childs.push_back(new ASTElseBlock);
+        blocks.push(static_cast<ASTBlock*>(mainBlock->childs.back()));
+        mainBlock = blocks.top();
+        
+        static_cast<ASTElseBlock*>(mainBlock)->label1 = lastIfBlock->label;
+        lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
+        static_cast<ASTElseBlock*>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
+        }
+        consume();
+      }
       if(peek().type == Type::KeywordIf) {
           mainBlock->childs.push_back(new ASTIfBlock);
           blocks.push(static_cast<ASTBlock*>(mainBlock->childs.back()));
@@ -192,7 +218,7 @@ public:
           mainBlock->left = parseExpression(0);
           consume();
           
-          static_cast<ASTIfBlock*>(mainBlock)->label = static_cast<ASTIfBlock*>(mainBlock)->label1 = std::string("ENDIF_") + std::to_string(mIfLblN++);
+          static_cast<ASTIfBlock*>(mainBlock)->label = static_cast<ASTIfBlock*>(mainBlock)->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
       }
       
       if(peek().type == Type::BlockStart) {
@@ -206,6 +232,8 @@ public:
         }
         consume();
       } else if (peek().type == Type::BlockEnd && blocks.size() > 1) {
+          //if(mTokens[mPos+1].type == Type::KeywordElse)
+          //  lastIfBlock = static_cast<ASTIfBlock*>(mainBlock);
           blocks.pop();
           mainBlock = blocks.top();
           consume();
@@ -259,7 +287,16 @@ public:
             }
             std::cout << static_cast<ASTIfBlock*>(node)->label1 << ":" << std::endl;
         }
+        if(node->token.type == Type::KeywordElse) {
+          //std::cout<<node->token.typeName()<<std::endl;
+          std::cout << static_cast<ASTElseBlock*>(node)->label << ":" << std::endl;
+          for(auto ch : static_cast<ASTBlock*>(node)->childs) {
+            generate(ch);
+          }
+          std::cout << static_cast<ASTElseBlock*>(node)->label1 << ":" << std::endl;
+        }
         if(node->token.type == Type::BlockStart) {
+          //std::cout<<node->token.typeName()<<std::endl;
           for(auto ch : static_cast<ASTBlock*>(node)->childs) {
             generate(ch);
           }
