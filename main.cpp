@@ -5,7 +5,7 @@
 #include <stack>
 #include <queue>
 
-enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, Keyword, KeywordIf, KeywordElse};
+enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
 const std::vector<std::string> Keywords {
   "if", "else", "while",
@@ -93,6 +93,11 @@ struct ASTNode
 };
 
 size_t ASTNode::tempVariableN = 0;
+
+struct ASTOperatorNode : public ASTNode
+{
+  ASTOperatorNode(const Token &t) : ASTNode(t) {}
+};
 
 struct ASTBlock : public ASTNode
 {
@@ -230,15 +235,15 @@ class Parser
     {
         auto left = parsePrimary();
         while(mPos < mTokens.size() && 
-        peek().type != Type::Endl &&
-        peek().type != Type::BlockStart &&
-        peek().type != Type::BlockEnd &&
+          peek().type != Type::Endl &&
+          peek().type != Type::BlockStart &&
+          peek().type != Type::BlockEnd &&
         mTokens[mPos].precedence() >= minPrec) {
             Token operatr = consume();
             if(operatr.value == ")") {
               break;
             }
-            auto node = new ASTNode(operatr);
+            auto node = new ASTOperatorNode(operatr);
             node->left = std::move(left);
             node->right = parseExpression(operatr.precedence() + 1);
             left = std::move(node);
