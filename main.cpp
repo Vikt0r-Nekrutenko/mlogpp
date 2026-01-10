@@ -6,7 +6,7 @@
 #include <queue>
 #include <regex>
 
-enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MlogBlock, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
 struct Token
 {
@@ -42,6 +42,8 @@ struct Token
         case Type::Endl: return "EndLine";
         case Type::KeywordIf: return "KeywordIf";
         case Type::KeywordElse: return "KeywordElse";
+        case Type::KeywordMlog: return "KeywordMlog";
+        case Type::MlogBlock: return "MlogBlock";
         default: return "None";
       }
     }
@@ -143,12 +145,8 @@ struct ASTIfBlock : public ASTBlock
   {
     if(token.type == Type::KeywordIf) {
       std::string leftValue = leftNodeOutMlogCode(stream);
-      //std::string rightValue = generate(node->right);
-      //std::string resultVariable = "T" + std::to_string(mNReg++);
       stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
-      //for(auto ch : static_cast<ASTBlock*>(node)->childs) {
-      //  generate(ch);
-      //}
+      
       ASTBlock::outMlogCode(stream);
       stream << label1 << ":" << std::endl;
     }
@@ -176,10 +174,45 @@ struct ASTElseBlock : public ASTBlock
   }
 };
 
+struct ASTMlogNode : public ASTNode
+{
+  ASTMlogNode(const std::string &v) : ASTNode({v, Type::KeywordMlog}) {}
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    stream << token.value << std::endl;
+    return "";
+  }
+};
+
+bool waitStr = false;
+std::string string;
+
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-        const std::regex pattern(R"((and|or|if|else)|)" // keywords
+    if(waitStr) {
+      for(size_t i = 0; i < expression.length(); ++i) {
+        if(expression[i] == ';') {
+          string.pop_back(); // remove last '\n'
+          waitStr = false;
+          tokens.push_back({string, Type::MlogBlock});
+          string.clear();
+        } else if(expression[i] == '\"') {
+          ++i;
+          while(true) {
+            if(expression[i] == '\"' && expression[i-1] == '\\'){
+              string.pop_back();
+            } else if(expression[i] == '\"')
+              break;
+            string += expression[i++];
+          }
+          string += '\n';
+        }
+      }
+      return tokens;
+    }
+    const std::regex pattern(R"((and|or|if|else|mlog)|)" // keywords
           R"(([\d]+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
           R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))"); // operators
@@ -196,6 +229,9 @@ std::vector<Token> tokenize(const std::string &expression)
             tokens.push_back({keyword, Type::KeywordIf});
           } else if(keyword == "else") {
             tokens.push_back({keyword, Type::KeywordElse});
+          } else if(keyword == "mlog") {
+            waitStr = true;
+            tokens.push_back({keyword, Type::KeywordMlog});
           }
         } else if(match[2].matched) { // numbers
           tokens.push_back({match[2].str(), Type::Number});
@@ -203,7 +239,7 @@ std::vector<Token> tokenize(const std::string &expression)
             tokens.push_back({match[3].str(), Type::Variable});
         } else if(match[4].matched) { // operators
           std::string buffer = match[4].str();
-          if(buffer == "=")
+               if(buffer == "=")
             tokens.push_back({buffer, Type::Assigment});
           else if(buffer == "{")
             tokens.push_back({buffer, Type::BlockStart});
@@ -328,6 +364,13 @@ class Parser
       mainBlock->childs.push_back(root);
     }
     
+    void parseMlogKeyword()
+    {
+      consume();
+      auto mlog = new ASTMlogNode(consume().value);
+      mainBlock->childs.push_back(mlog);
+    }
+    
 public:
 
     Parser(const std::vector<Token> &t) : mTokens{t} {}
@@ -345,6 +388,8 @@ public:
         parseBlockOpen();
       } else if (peek().type == Type::BlockEnd && blocks.size() > 1) {
           parseBlockClose();
+      } else if(peek().type == Type::KeywordMlog) {
+        parseMlogKeyword();
       } else if (peek().type == Type::Endl) {
         consume();
       } else if (peek().type == Type::Variable || peek().type == Type::Assigment) {
@@ -363,11 +408,14 @@ int main()
     
   while(!file.eof()) {
     std::string txt;
-    file >> txt;
-//    std::cout<<txt<<std::endl;
+    if(!waitStr)
+      file >> txt;
+    else {
+      std::getline(file, txt, '\n');
+    }
     auto tmptokens = tokenize(txt);
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
-    }
+  }
     for(const auto &token : tokens) {
         std::cout << token.value << ": " << token.typeName() << std::endl;
     }
