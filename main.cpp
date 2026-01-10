@@ -8,10 +8,6 @@
 
 enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
-const std::vector<std::string> Keywords {
-  "if", "else", "while",
-};
-
 struct Token
 {
     std::string value;
@@ -19,13 +15,19 @@ struct Token
     
     int precedence() const 
     { 
-      if(value == "*" || value == "/")
-        return 9;
-      else if(value == "+" || value == "-")
-        return 8;
-      else if(value == "and" || value == "or")
-        return 7;
-      return 0;
+        if(value == "*" || value == "/" || value == "%")
+            return 6;
+        else if(value == "+" || value == "-")
+            return 5;
+        else if(value == "<" || value == ">" || value == "<=" || value == ">=")
+            return 4;
+        else if(value == "==" || value == "!=")
+            return 3;
+        else if(value == "&" || value == "|")
+            return 2;
+        else if(value == "and" || value == "or")
+            return 1;
+        return 0;
     } 
     
     std::string typeName() const
@@ -43,12 +45,18 @@ struct Token
     
     std::string getOpName() const
     {
-             if(value == "+") return "add";
-        else if(value == "-") return "sub";
-        else if(value == "*") return "mul";
-        else if(value == "/") return "div";
-        else if(value == "and") return "land";
-        else if(value == "or") return "or";
+             if(value == "+") return "op add";
+        else if(value == "-") return "op sub";
+        else if(value == "*") return "op mul";
+        else if(value == "/") return "op div";
+        else if(value == "<") return "op lessThan";
+        else if(value == ">") return "op greaterThan";
+        else if(value == "<=") return "op lessThanEq";
+        else if(value == ">=") return "op greaterThanEq";
+        else if(value == "==") return "op strictEqual";
+        else if(value == "!=") return "op notEqual";
+        else if(value == "and") return "op land";
+        else if(value == "or") return "op or";
         return "";
     }
 };
@@ -100,7 +108,7 @@ struct ASTOperatorNode : public ASTNode
     std::string leftValue = leftNodeOutMlogCode(stream);
     std::string rightValue = rightNodeOutMlogCode(stream);
     std::string resultVariable = "T" + std::to_string(tempVariableN++);
-    std::cout << "op " << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+    std::cout << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
     return resultVariable;
   }
 };
@@ -165,61 +173,43 @@ struct ASTElseBlock : public ASTBlock
   }
 };
 
-Token tokenizeKeywords(const std::string &s)
-{
-  auto keywordIt = find_if(Keywords.begin(), Keywords.end(), [&](const std::string &keyword) {
-    return s == keyword ? true : false;
-  });
-  if(keywordIt != Keywords.end()) {
-    if(*keywordIt == "if")
-      return {s, Type::KeywordIf};
-    if(*keywordIt == "else")
-      return {s, Type::KeywordElse};
-  } else if(s == "and" || s == "or") {
-    return {s, Type::Operator};
-  }
-  return {s, Type::Variable};
-}
-
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-    for(size_t i = 0; i < expression.length(); ++i) {
-        if(std::isspace(expression[i]))
-            continue;
-            
-        std::string buffer;
-        while(i < expression.length() && !std::isalnum(expression[i]) && expression[i] != std::isspace(expression[i])) {
-          buffer += expression[i++];
-        }
+        const std::regex pattern(R"((and|or|if|else)|)"
+          R"(([\d]+)|)"
+          R"(([a-zA-Z_][\w]*)|)"
+          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))");
+    auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
+    auto wordEnd = std::sregex_iterator();
+    for(auto i = wordsBegin; i != wordEnd; ++i) {
+        std::smatch match = *i;
         
-        if(!buffer.empty()) {
-          if(buffer == "+" || buffer == "-" || buffer == "*" || buffer == "*" || buffer == "/" || buffer == "(" || buffer == ")")
-              tokens.push_back({buffer, Type::Operator});
-            else if(buffer == "=")
-              tokens.push_back({buffer, Type::Assigment});
-            else if(buffer == "{")
-              tokens.push_back({buffer, Type::BlockStart});
-            else if(buffer == "}")
-              tokens.push_back({buffer, Type::BlockEnd});
-            else if(buffer == ";")
-              tokens.push_back({buffer, Type::Endl});
-          if(buffer.size() > 1)
-            std::cout<<"\t"<<buffer<<std::endl;
-          buffer.clear();
-          --i;
-        }
-
-        while(i < expression.length() && (std::isalnum(expression[i]) || expression[i] == '_')) {
-            buffer += expression[i++];
-        }
-        if(!buffer.empty()) {
-          if(std::isdigit(buffer[0])) {
-            tokens.push_back({buffer, Type::Number});
-          } else {
-            tokens.push_back(tokenizeKeywords(buffer));
+        if(match[1].matched) {
+          std::string keyword = match[1].str();
+          if(keyword == "and" || keyword == "or") {
+            tokens.push_back({keyword, Type::Operator});
+          } else if(keyword == "if") {
+            tokens.push_back({keyword, Type::KeywordIf});
+          } else if(keyword == "else") {
+            tokens.push_back({keyword, Type::KeywordElse});
           }
-          i--;
+        } else if(match[2].matched) {
+          tokens.push_back({match[2].str(), Type::Number});
+        } else if(match[3].matched) {
+            tokens.push_back({match[3].str(), Type::Variable});
+        } else if(match[4].matched) {
+          std::string buffer = match[4].str();
+          if(buffer == "=")
+            tokens.push_back({buffer, Type::Assigment});
+          else if(buffer == "{")
+            tokens.push_back({buffer, Type::BlockStart});
+          else if(buffer == "}")
+            tokens.push_back({buffer, Type::BlockEnd});
+          else if(buffer == ";")
+            tokens.push_back({buffer, Type::Endl});
+          else
+            tokens.push_back({buffer, Type::Operator});
         }
     }
     return tokens;
