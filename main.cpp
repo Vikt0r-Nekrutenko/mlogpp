@@ -1,31 +1,54 @@
-<<<<<<< HEAD
-=======
 #include <iostream>
-#include <regex>
+#include <memory>
 #include <string>
 #include <vector>
+#include <stack>
+#include <queue>
+#include <regex>
 
-enum class NodeType {Variable, Number, Operator, Assigment, Keyword};
+enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
-struct ASTNode
+struct Token
 {
-    NodeType type;
     std::string value;
-    ASTNode *left = nullptr;
-    ASTNode *right = nullptr;
-
-    ASTNode(NodeType t, const std::string &s) : type{t}, value{s} {}
-
-    virtual std::string getMlogValue() const { return value; }
-};
-
-struct ASTNodeOperator : public ASTNode
-{
-    ASTNodeOperator(const std::string &s) : ASTNode(NodeType::Operator, s) {}
-
-    std::string getMlogValue() const override
+    Type type;
+    
+    int precedence() const 
+    { 
+        if(value == "*" || value == "/" || value == "%")
+            return 6;
+        else if(value == "+" || value == "-")
+            return 5;
+        else if(value == "<" || value == ">" || value == "<=" || value == ">=")
+            return 4;
+        else if(value == "==" || value == "!=")
+            return 3;
+        else if(value == "&" || value == "|")
+            return 2;
+        else if(value == "and" || value == "or")
+            return 1;
+        return 0;
+    } 
+    
+    std::string typeName() const
     {
-        if(value == "+") return "op add";
+      switch(type) {
+        case Type::Variable: return "Variable";
+        case Type::Number: return "Number";
+        case Type::Assigment: return "Assigment";
+        case Type::Operator: return "Operator";
+        case Type::BlockStart: return "BlockStart";
+        case Type::BlockEnd: return "BlockEnd";
+        case Type::Endl: return "EndLine";
+        case Type::KeywordIf: return "KeywordIf";
+        case Type::KeywordElse: return "KeywordElse";
+        default: return "None";
+      }
+    }
+    
+    std::string getOpName() const
+    {
+             if(value == "+") return "op add";
         else if(value == "-") return "op sub";
         else if(value == "*") return "op mul";
         else if(value == "/") return "op div";
@@ -35,33 +58,162 @@ struct ASTNodeOperator : public ASTNode
         else if(value == ">=") return "op greaterThanEq";
         else if(value == "==") return "op strictEqual";
         else if(value == "!=") return "op notEqual";
-        else if(value == "&&") return "op land";
-        else if(value == "||") return "op or";
-        return value;
+        else if(value == "and") return "op land";
+        else if(value == "or") return "op or";
+        return "";
     }
 };
 
-struct Token
+struct ASTNode
 {
-    std::string value;
-    bool isOperator;
+    Token token;
+    ASTNode *left = nullptr;
+    ASTNode *right = nullptr;
+    static size_t tempVariableN;
+
+    ASTNode(const Token &t) : token{t} {}
+    
+    std::string leftNodeOutMlogCode(std::ostream &stream)
+    {
+      if(left == nullptr)
+        return "";
+      return left->outMlogCode(stream);
+    }
+    
+    std::string rightNodeOutMlogCode(std::ostream &stream)
+    {
+      if(right == nullptr)
+        return "";
+      return right->outMlogCode(stream);
+    }
+    
+    virtual std::string outMlogCode(std::ostream &stream)
+    {
+      if(token.type == Type::Number || token.type == Type::Variable)
+          return token.value;
+      if(token.type == Type::Assigment) {
+          std::string value = rightNodeOutMlogCode(stream);
+          stream << "set " << left->token.value << " " << value << std::endl;
+          return left->token.value;
+      }
+      return "";
+    }
+};
+
+size_t ASTNode::tempVariableN = 0;
+
+struct ASTOperatorNode : public ASTNode
+{
+  ASTOperatorNode(const Token &t) : ASTNode(t) {}
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    std::string leftValue = leftNodeOutMlogCode(stream);
+    std::string rightValue = rightNodeOutMlogCode(stream);
+    std::string resultVariable = "_tempVar" + std::to_string(tempVariableN++);
+    stream << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+    return resultVariable;
+  }
+};
+
+struct ASTBlock : public ASTNode
+{
+  ASTBlock() : ASTNode{Token{"{", Type::BlockStart}} {}
+  std::vector<ASTNode*> childs;
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    for(auto ch : childs) {
+      ch->outMlogCode(stream);
+    }
+    return "";
+  }
+};
+
+struct ASTIfBlock : public ASTBlock
+{
+  ASTIfBlock() : ASTBlock() 
+  {
+    token.type = Type::KeywordIf;
+    token.value = "if";
+  }
+  std::string label, label1;
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    if(token.type == Type::KeywordIf) {
+      std::string leftValue = leftNodeOutMlogCode(stream);
+      //std::string rightValue = generate(node->right);
+      //std::string resultVariable = "T" + std::to_string(mNReg++);
+      stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
+      //for(auto ch : static_cast<ASTBlock*>(node)->childs) {
+      //  generate(ch);
+      //}
+      ASTBlock::outMlogCode(stream);
+      stream << label1 << ":" << std::endl;
+    }
+    return "";
+  }
+};
+
+struct ASTElseBlock : public ASTBlock
+{
+  ASTElseBlock() : ASTBlock() 
+  {
+    token.type = Type::KeywordElse;
+    token.value = "else";
+  }
+  std::string label, label1;
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    if(token.type == Type::KeywordElse) {
+      stream << label << ":" << std::endl;
+      ASTBlock::outMlogCode(stream);
+      stream << label1 << ":" << std::endl;
+    }
+    return "";
+  }
 };
 
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-    const std::regex pattern(R"(([\d]+)|([a-zA-Z_][\w]*)|(!=|==|<=|>=|&&|\|\||[\+\-\/\*\=\(\)\<\>\&\|\%]))");
+        const std::regex pattern(R"((and|or|if|else)|)" // keywords
+          R"(([\d]+)|)" // numbers
+          R"(([a-zA-Z_][\w]*)|)" // variables
+          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))"); // operators
     auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
         std::smatch match = *i;
-        std::string value = match.str();
-
-        // if(match[2].matched) {
-        //     std::string keyword = match[2].str();
-        //     if(keyword == "if")
-        // }
-        tokens.push_back({value, match[3].matched});
+        
+        if(match[1].matched) { // keywords
+          std::string keyword = match[1].str();
+          if(keyword == "and" || keyword == "or") {
+            tokens.push_back({keyword, Type::Operator});
+          } else if(keyword == "if") {
+            tokens.push_back({keyword, Type::KeywordIf});
+          } else if(keyword == "else") {
+            tokens.push_back({keyword, Type::KeywordElse});
+          }
+        } else if(match[2].matched) { // numbers
+          tokens.push_back({match[2].str(), Type::Number});
+        } else if(match[3].matched) { // variables
+            tokens.push_back({match[3].str(), Type::Variable});
+        } else if(match[4].matched) { // operators
+          std::string buffer = match[4].str();
+          if(buffer == "=")
+            tokens.push_back({buffer, Type::Assigment});
+          else if(buffer == "{")
+            tokens.push_back({buffer, Type::BlockStart});
+          else if(buffer == "}")
+            tokens.push_back({buffer, Type::BlockEnd});
+          else if(buffer == ";")
+            tokens.push_back({buffer, Type::Endl});
+          else
+            tokens.push_back({buffer, Type::Operator});
+        }
     }
     return tokens;
 }
@@ -69,40 +221,31 @@ std::vector<Token> tokenize(const std::string &expression)
 class Parser
 {
     std::vector<Token> mTokens;
+    std::stack<ASTBlock *> blocks;
+    ASTIfBlock *lastIfBlock = nullptr;
+    ASTBlock *mainBlock = nullptr;
     size_t mPos = 0;
+    size_t mIfLblN = 0;
 
-    Token peek() { return mPos < mTokens.size() ? mTokens[mPos] : Token{"", false}; }
+    Token peek() { return mTokens[mPos]; }
 
     Token consume() { return mTokens[mPos++]; }
-
-    int precedence(const std::string &op)
-    {
-        if(op == "*" || op == "/" || op == "%")
-            return 6;
-        else if(op == "+" || op == "-")
-            return 5;
-        else if(op == "<" || op == ">" || op == "<=" || op == ">=")
-            return 4;
-        else if(op == "==" || op == "!=")
-            return 3;
-        else if(op == "&" || op == "|")
-            return 2;
-        else if(op == "&&" || op == "||")
-            return 1;
-        return 0;
-    }
 
     ASTNode *parseExpression(int minPrec)
     {
         auto left = parsePrimary();
-        while(mPos < mTokens.size()){
-            Token op = peek();
-            if(op.value == ")" || precedence(op.value) < minPrec)
-                break;
-            consume();
-            auto node = new ASTNodeOperator(op.value);
+        while(mPos < mTokens.size() && 
+          peek().type != Type::Endl &&
+          peek().type != Type::BlockStart &&
+          peek().type != Type::BlockEnd &&
+        mTokens[mPos].precedence() >= minPrec) {
+            Token operatr = consume();
+            if(operatr.value == ")") {
+              break;
+            }
+            auto node = new ASTOperatorNode(operatr);
             node->left = std::move(left);
-            node->right = parseExpression(precedence(op.value) + 1);
+            node->right = parseExpression(operatr.precedence() + 1);
             left = std::move(node);
         }
         return left;
@@ -111,108 +254,124 @@ class Parser
     ASTNode *parsePrimary()
     {
         Token t = consume();
-        if(t.value == "(") {
-            auto node = parseExpression(0);
-            consume();
-            return node;
+        if(t.value == "("){
+          return parseExpression(0);
         }
-        if(std::isdigit(t.value[0]))
-            return new ASTNode(NodeType::Number, t.value);
-        return new ASTNode(NodeType::Variable, t.value);
+        return new ASTNode(t);
     }
 
+    ASTBlock *lastChildAsBlock()
+    {
+      return static_cast<ASTBlock*>(mainBlock->childs.back());
+    }
+    
+    template <class BlockType>
+    ASTBlock *addNewBlock()
+    {
+      mainBlock->childs.push_back(new BlockType);
+      blocks.push(lastChildAsBlock());
+      return blocks.top();
+    }
+    
+    void parseIfKeyword()
+    {
+      mainBlock = addNewBlock<ASTIfBlock>();
+      consume();
+      
+      mainBlock->left = parseExpression(0);
+      consume();
+      
+      static_cast<ASTIfBlock*>(mainBlock)->label = static_cast<ASTIfBlock*>(mainBlock)->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
+    }
+    
+    void parseElseKeyword()
+    {
+      if(lastChildAsBlock()->token.type == Type::KeywordIf){
+          lastIfBlock = static_cast<ASTIfBlock*>(lastChildAsBlock());
+        
+        mainBlock = addNewBlock<ASTElseBlock>();
+        
+        static_cast<ASTElseBlock*>(mainBlock)->label1 = lastIfBlock->label;
+        lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
+        static_cast<ASTElseBlock*>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
+        }
+        consume();
+    }
+    
+    void parseBlockOpen()
+    {
+      if(mainBlock != nullptr) {
+        mainBlock = addNewBlock<ASTBlock>();
+      } else {
+        mainBlock = new ASTBlock;
+          blocks.push(mainBlock);
+      }
+      consume();
+    }
+    
+    void parseBlockClose()
+    {
+      //if(mTokens[mPos+1].type == Type::KeywordElse)
+      //  lastIfBlock = static_cast<ASTIfBlock*>(mainBlock);
+      blocks.pop();
+      mainBlock = blocks.top();
+      consume();
+    }
+    
+    void parseAssigment()
+    {
+      auto left = new ASTNode(consume()); //var
+      auto root = new ASTNode(consume()); //assigment
+
+      root->left = std::move(left);
+      root->right = parseExpression(0);
+      mainBlock->childs.push_back(root);
+    }
+    
 public:
 
     Parser(const std::vector<Token> &t) : mTokens{t} {}
 
     ASTNode *parse()
     {
-        if(consume().value == "if") {
-            // auto left = new ASTNode(NodeType::Variable, "_reg1");
-            consume();
-            auto root = new ASTNode(NodeType::Keyword, "if");
-            // root->left = std::move(left);
-            root->right = parseExpression(0);
-            return root;
-        }
-        auto left = new ASTNode(NodeType::Variable, consume().value);
+      if(mPos >= mTokens.size())
+        return mainBlock; // main block
+      
+      if(peek().type == Type::KeywordElse) {
+        parseElseKeyword();
+      } else if(peek().type == Type::KeywordIf) {
+        parseIfKeyword();
+      } else if(peek().type == Type::BlockStart) {
+        parseBlockOpen();
+      } else if (peek().type == Type::BlockEnd && blocks.size() > 1) {
+          parseBlockClose();
+      } else if (peek().type == Type::Endl) {
         consume();
-        auto root = new ASTNode(NodeType::Assigment, "=");
-
-        root->left = std::move(left);
-        root->right = parseExpression(0);
-
-        return root;
+      } else if (peek().type == Type::Variable || peek().type == Type::Assigment) {
+        parseAssigment();
+      }
+      return parse();
     }
 };
 
-class Generator
-{
-    size_t mNReg = 0;
-
-public:
-
-    std::string generate(ASTNode *node)
-    {
-        if(node == nullptr) return "";
-        if(node->type == NodeType::Number || node->type == NodeType::Variable)
-            return node->value;
-        if(node->type == NodeType::Assigment) {
-            std::string value = generate(node->right);
-            std::cout << "set " << node->left->value << " " << value << std::endl;
-            return node->left->value;
-        }
-        if(node->type == NodeType::Operator) {
-            std::string leftValue = generate(node->left);
-            std::string rightValue = generate(node->right);
-            std::string resultVariable = "T" + std::to_string(mNReg++);
-            std::cout << node->getMlogValue() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
-            return resultVariable;
-        }
-        if(node->type == NodeType::Keyword) {
-            std::string value = generate(node->right);
-            std::cout << "jump ??? notEqual " << value << " true" << std::endl;
-            return "";
-        }
-        return "";
-    }
-};
+#include <fstream>
 
 int main()
 {
-    std::string line = "if(1 == 2 || 2 != 3)";
-    auto tokens = tokenize(line);
+  std::vector<Token> tokens;
+  std::ifstream file("test.mlogpp");
+    
+  while(!file.eof()) {
+    std::string txt;
+    file >> txt;
+//    std::cout<<txt<<std::endl;
+    auto tmptokens = tokenize(txt);
+    tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
+    }
     for(const auto &token : tokens) {
-        // std::cout << token.value << " " << token.isOperator << std::endl;
-        std::cout << token.value << "_";
-    } std::cout << std::endl;
+        std::cout << token.value << ": " << token.typeName() << std::endl;
+    }
     auto ast = Parser(tokens).parse();
-    Generator().generate(ast);
-
+    ast->outMlogCode(std::cout);
     return 0;
 }
-/**
- * op lessThan _reg1 a b
- * op greaterThan _reg1 a b
- * op lessThanEq _reg1 a b
- * op greaterThanEq _reg1 a b
- * op strictEqual _reg1 a b
- * op land r a b
- * op or r a b
-
-op strictEqual _reg1 1 2
-jump ELSE1 notEqual _reg1 true
-op add a 2 2
-jump ENDIF1 always
-ELSE1:
-op add a 1 1
-ENDIF1:
-set b 0
-
-if(1 == 2) {
-    a = 2 + 2
-} else {
-    a = 1 + 1
-}
-*/
->>>>>>> 64fb5a67149d6775f7d10a175924977c28d5c12b
