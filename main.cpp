@@ -4,6 +4,7 @@
 #include <vector>
 #include <stack>
 #include <queue>
+#include <regex>
 
 enum class Type {Variable, Number, Operator, Assigment, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
@@ -18,10 +19,12 @@ struct Token
     
     int precedence() const 
     { 
-      if(value == "+" || value == "-")
-        return 1;
-      else if(value == "*" || value == "/")
-        return 2;
+      if(value == "*" || value == "/")
+        return 9;
+      else if(value == "+" || value == "-")
+        return 8;
+      else if(value == "and" || value == "or")
+        return 7;
       return 0;
     } 
     
@@ -34,7 +37,6 @@ struct Token
         case Type::Operator: return "Operator";
         case Type::BlockStart: return "BlockStart";
         case Type::BlockEnd: return "BlockEnd";
-        case Type::Keyword: return "Keyword";
         default: return "None";
       }
     }
@@ -45,6 +47,8 @@ struct Token
         else if(value == "-") return "sub";
         else if(value == "*") return "mul";
         else if(value == "/") return "div";
+        else if(value == "and") return "land";
+        else if(value == "or") return "or";
         return "";
     }
 };
@@ -81,13 +85,6 @@ struct ASTNode
           stream << "set " << left->token.value << " " << value << std::endl;
           return left->token.value;
       }
-      if(token.type == Type::Operator) {
-        std::string leftValue = leftNodeOutMlogCode(stream);
-        std::string rightValue = rightNodeOutMlogCode(stream);
-        std::string resultVariable = "T" + std::to_string(tempVariableN++);
-        std::cout << "op " << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
-        return resultVariable;
-      }
       return "";
     }
 };
@@ -97,6 +94,15 @@ size_t ASTNode::tempVariableN = 0;
 struct ASTOperatorNode : public ASTNode
 {
   ASTOperatorNode(const Token &t) : ASTNode(t) {}
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    std::string leftValue = leftNodeOutMlogCode(stream);
+    std::string rightValue = rightNodeOutMlogCode(stream);
+    std::string resultVariable = "T" + std::to_string(tempVariableN++);
+    std::cout << "op " << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+    return resultVariable;
+  }
 };
 
 struct ASTBlock : public ASTNode
@@ -169,6 +175,8 @@ Token tokenizeKeywords(const std::string &s)
       return {s, Type::KeywordIf};
     if(*keywordIt == "else")
       return {s, Type::KeywordElse};
+  } else if(s == "and" || s == "or") {
+    return {s, Type::Operator};
   }
   return {s, Type::Variable};
 }
@@ -179,30 +187,29 @@ std::vector<Token> tokenize(const std::string &expression)
     for(size_t i = 0; i < expression.length(); ++i) {
         if(std::isspace(expression[i]))
             continue;
-        switch(expression[i]) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '(':
-        case ')':
-            tokens.push_back({std::string(1, expression[i]), Type::Operator});
-            break;
-        case '=':
-          tokens.push_back({std::string(1, expression[i]), Type::Assigment});
-            break;
-        case '{':
-          tokens.push_back({std::string(1, expression[i]), Type::BlockStart});
-          break;
-        case '}':
-          tokens.push_back({std::string(1, expression[i]), Type::BlockEnd});
-          break;
-        case ';':
-          tokens.push_back({std::string(1, expression[i]), Type::Endl});
-          break;
+            
+        std::string buffer;
+        while(i < expression.length() && !std::isalnum(expression[i]) && expression[i] != std::isspace(expression[i])) {
+          buffer += expression[i++];
+        }
+        
+        if(!buffer.empty()) {
+          if(buffer == "+" || buffer == "-" || buffer == "*" || buffer == "*" || buffer == "/" || buffer == "(" || buffer == ")")
+              tokens.push_back({buffer, Type::Operator});
+            else if(buffer == "=")
+              tokens.push_back({buffer, Type::Assigment});
+            else if(buffer == "{")
+              tokens.push_back({buffer, Type::BlockStart});
+            else if(buffer == "}")
+              tokens.push_back({buffer, Type::BlockEnd});
+            else if(buffer == ";")
+              tokens.push_back({buffer, Type::Endl});
+          if(buffer.size() > 1)
+            std::cout<<"\t"<<buffer<<std::endl;
+          buffer.clear();
+          --i;
         }
 
-        std::string buffer;
         while(i < expression.length() && (std::isalnum(expression[i]) || expression[i] == '_')) {
             buffer += expression[i++];
         }
@@ -364,12 +371,13 @@ int main()
   while(!file.eof()) {
     std::string txt;
     file >> txt;
+//    std::cout<<txt<<std::endl;
     auto tmptokens = tokenize(txt);
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
     }
-    /*for(const auto &token : tokens) {
-        std::cout << token.value << " " << token.typeName() << std::endl;
-    }*/
+    for(const auto &token : tokens) {
+        std::cout << token.value << ": " << token.typeName() << std::endl;
+    }
     auto ast = Parser(tokens).parse();
     ast->outMlogCode(std::cout);
     return 0;
