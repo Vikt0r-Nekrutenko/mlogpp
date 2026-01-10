@@ -39,6 +39,9 @@ struct Token
         case Type::Operator: return "Operator";
         case Type::BlockStart: return "BlockStart";
         case Type::BlockEnd: return "BlockEnd";
+        case Type::Endl: return "EndLine";
+        case Type::KeywordIf: return "KeywordIf";
+        case Type::KeywordElse: return "KeywordElse";
         default: return "None";
       }
     }
@@ -107,8 +110,8 @@ struct ASTOperatorNode : public ASTNode
   {
     std::string leftValue = leftNodeOutMlogCode(stream);
     std::string rightValue = rightNodeOutMlogCode(stream);
-    std::string resultVariable = "T" + std::to_string(tempVariableN++);
-    std::cout << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
+    std::string resultVariable = "_tempVar" + std::to_string(tempVariableN++);
+    stream << token.getOpName() << " " << resultVariable << " " << leftValue << " " << rightValue << std::endl;
     return resultVariable;
   }
 };
@@ -176,16 +179,16 @@ struct ASTElseBlock : public ASTBlock
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-        const std::regex pattern(R"((and|or|if|else)|)"
-          R"(([\d]+)|)"
-          R"(([a-zA-Z_][\w]*)|)"
-          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))");
+        const std::regex pattern(R"((and|or|if|else)|)" // keywords
+          R"(([\d]+)|)" // numbers
+          R"(([a-zA-Z_][\w]*)|)" // variables
+          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))"); // operators
     auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
         std::smatch match = *i;
         
-        if(match[1].matched) {
+        if(match[1].matched) { // keywords
           std::string keyword = match[1].str();
           if(keyword == "and" || keyword == "or") {
             tokens.push_back({keyword, Type::Operator});
@@ -194,11 +197,11 @@ std::vector<Token> tokenize(const std::string &expression)
           } else if(keyword == "else") {
             tokens.push_back({keyword, Type::KeywordElse});
           }
-        } else if(match[2].matched) {
+        } else if(match[2].matched) { // numbers
           tokens.push_back({match[2].str(), Type::Number});
-        } else if(match[3].matched) {
+        } else if(match[3].matched) { // variables
             tokens.push_back({match[3].str(), Type::Variable});
-        } else if(match[4].matched) {
+        } else if(match[4].matched) { // operators
           std::string buffer = match[4].str();
           if(buffer == "=")
             tokens.push_back({buffer, Type::Assigment});
@@ -262,10 +265,10 @@ class Parser
       return static_cast<ASTBlock*>(mainBlock->childs.back());
     }
     
-    template <class T>
+    template <class BlockType>
     ASTBlock *addNewBlock()
     {
-      mainBlock->childs.push_back(new T);
+      mainBlock->childs.push_back(new BlockType);
       blocks.push(lastChildAsBlock());
       return blocks.top();
     }
