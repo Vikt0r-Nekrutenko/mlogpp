@@ -6,7 +6,7 @@
 #include <queue>
 #include <regex>
 
-enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MlogBlock, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultiString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
 struct Token
 {
@@ -43,7 +43,7 @@ struct Token
         case Type::KeywordIf: return "KeywordIf";
         case Type::KeywordElse: return "KeywordElse";
         case Type::KeywordMlog: return "KeywordMlog";
-        case Type::MlogBlock: return "MlogBlock";
+        case Type::MultiString: return "MultiString";
         default: return "None";
       }
     }
@@ -191,38 +191,32 @@ std::string string;
 std::vector<Token> tokenize(const std::string &expression)
 {
     std::vector<Token> tokens;
-    if(waitStr) {
-      for(size_t i = 0; i < expression.length(); ++i) {
-        if(expression[i] == ';') {
-          string.pop_back(); // remove last '\n'
-          waitStr = false;
-          tokens.push_back({string, Type::MlogBlock});
-          string.clear();
-        } else if(expression[i] == '\"') {
-          ++i;
-          while(true) {
-            if(expression[i] == '\"' && expression[i-1] == '\\'){
-              string.pop_back();
-            } else if(expression[i] == '\"')
-              break;
-            string += expression[i++];
-          }
-          string += '\n';
-        }
-      }
-      return tokens;
-    }
-    const std::regex pattern(R"((and|or|if|else|mlog)|)" // keywords
-          R"(([\d]+)|)" // numbers
+    const std::regex pattern(
+          R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
+          R"((and|or|if|else|mlog)|)" // keywords
+          R"((\-*\d+\.\d+|\d+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
-          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}]))"); // operators
+          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}])|)" // operators
+          );
     auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
         std::smatch match = *i;
         
-        if(match[1].matched) { // keywords
-          std::string keyword = match[1].str();
+        if(match[1].matched) { // strings
+          std::string subStr = match[1].str();
+          for(auto it = subStr.begin()+1; it != subStr.end()-1; ++it)
+            if(*it != '\\')
+              string += *it;
+          string += '\n';
+          if(expression.back() == ';') {
+            string.pop_back(); // remove last '\n'
+            waitStr = false;
+            tokens.push_back({string, Type::MultiString});
+            string.clear();
+          }
+        } else if(match[2].matched) { // keywords
+          std::string keyword = match[2].str();
           if(keyword == "and" || keyword == "or") {
             tokens.push_back({keyword, Type::Operator});
           } else if(keyword == "if") {
@@ -233,12 +227,12 @@ std::vector<Token> tokenize(const std::string &expression)
             waitStr = true;
             tokens.push_back({keyword, Type::KeywordMlog});
           }
-        } else if(match[2].matched) { // numbers
-          tokens.push_back({match[2].str(), Type::Number});
-        } else if(match[3].matched) { // variables
-            tokens.push_back({match[3].str(), Type::Variable});
-        } else if(match[4].matched) { // operators
-          std::string buffer = match[4].str();
+        } else if(match[3].matched) { // numbers
+          tokens.push_back({match[3].str(), Type::Number});
+        } else if(match[4].matched) { // variables
+            tokens.push_back({match[4].str(), Type::Variable});
+        } else if(match[5].matched) { // operators
+          std::string buffer = match[5].str();
                if(buffer == "=")
             tokens.push_back({buffer, Type::Assigment});
           else if(buffer == "{")
@@ -419,7 +413,7 @@ int main()
     for(const auto &token : tokens) {
         std::cout << token.value << ": " << token.typeName() << std::endl;
     }
-    auto ast = Parser(tokens).parse();
-    ast->outMlogCode(std::cout);
+  auto ast = Parser(tokens).parse();
+  ast->outMlogCode(std::cout);
     return 0;
 }
