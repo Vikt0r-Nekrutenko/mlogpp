@@ -187,7 +187,6 @@ struct ASTMlogNode : public ASTNode
   }
 };
 
-bool waitStr = false;
 std::string string;
 
 std::vector<Token> tokenize(const std::string &expression)
@@ -196,7 +195,7 @@ std::vector<Token> tokenize(const std::string &expression)
     const std::regex pattern(
           R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
           R"((and|or|if|else|mlog)|)" // keywords
-          R"((-?\d+\.\d+|\d+)|)" // numbers
+          R"((-?\d+\.\d+|-?\d+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
           R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}])|)" // operators
           );
@@ -213,7 +212,6 @@ std::vector<Token> tokenize(const std::string &expression)
           string += '\n';
           if(expression.back() == ';') {
             string.pop_back(); // remove last '\n'
-            waitStr = false;
             tokens.push_back({string, Type::MultyString});
             string.clear();
           }
@@ -226,7 +224,6 @@ std::vector<Token> tokenize(const std::string &expression)
           } else if(keyword == "else") {
             tokens.push_back({keyword, Type::KeywordElse});
           } else if(keyword == "mlog") {
-            waitStr = true;
             tokens.push_back({keyword, Type::KeywordMlog});
           }
         } else if(match[3].matched) { // numbers
@@ -404,11 +401,7 @@ int main()
     
   while(!file.eof()) {
     std::string txt;
-    if(!waitStr)
-      file >> txt;
-    else {
-      std::getline(file, txt, '\n');
-    }
+    std::getline(file, txt, '\n');
     auto tmptokens = tokenize(txt);
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
   }
