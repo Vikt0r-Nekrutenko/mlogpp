@@ -6,7 +6,7 @@
 #include <queue>
 #include <regex>
 
-enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultiString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
 
 struct Token
 {
@@ -43,7 +43,7 @@ struct Token
         case Type::KeywordIf: return "KeywordIf";
         case Type::KeywordElse: return "KeywordElse";
         case Type::KeywordMlog: return "KeywordMlog";
-        case Type::MultiString: return "MultiString";
+        case Type::MultyString: return "MultyString";
         default: return "None";
       }
     }
@@ -212,7 +212,7 @@ std::vector<Token> tokenize(const std::string &expression)
           if(expression.back() == ';') {
             string.pop_back(); // remove last '\n'
             waitStr = false;
-            tokens.push_back({string, Type::MultiString});
+            tokens.push_back({string, Type::MultyString});
             string.clear();
           }
         } else if(match[2].matched) { // keywords
