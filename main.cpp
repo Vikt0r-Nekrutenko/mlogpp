@@ -181,7 +181,7 @@ struct ASTMlogNode : public ASTNode
   std::string outMlogCode(std::ostream &stream) override
   {
     stream << token.value << std::endl;
-    return "";
+    return token.value;
   }
 };
 
@@ -194,7 +194,7 @@ std::vector<Token> tokenize(const std::string &expression)
     const std::regex pattern(
           R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
           R"((and|or|if|else|mlog)|)" // keywords
-          R"((\-*\d+\.\d+|\d+)|)" // numbers
+          R"((-?\d+\.\d+|\d+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
           R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}])|)" // operators
           );
