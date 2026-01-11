@@ -91,6 +91,8 @@ struct ASTNode
     
     virtual std::string outMlogCode(std::ostream &stream)
     {
+      if(token.type == Type::MultyString)
+        return "\"" + token.value + "\"";
       if(token.type == Type::Number || token.type == Type::Variable)
           return token.value;
       if(token.type == Type::Assigment) {
