@@ -1,3 +1,5 @@
+// beta 2.0
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -5,6 +7,7 @@
 #include <stack>
 #include <queue>
 #include <regex>
+#include <fstream>
 
 enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell};
 
@@ -444,8 +447,6 @@ public:
       return parse();
     }
 };
-
-#include <fstream>
 
 int main(int argc, char **argv)
 {
