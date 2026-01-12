@@ -9,6 +9,8 @@
 #include <regex>
 #include <fstream>
 
+#include "tokenizer.hpp"
+
 enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell};
 
 struct Token
@@ -448,9 +450,11 @@ public:
     }
 };
 
+mlogpp::Token::Type t1;
+
 int main(int argc, char **argv)
 {
-  std::vector<Token> tokens;
+  /*std::vector<Token> tokens;
   std::ifstream file(argv[1]);
     
   while(!file.eof()) {
@@ -459,11 +463,11 @@ int main(int argc, char **argv)
     auto tmptokens = tokenize(txt);
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
   }
-    /*for(const auto &token : tokens) {
+    for(const auto &token : tokens) {
         std::cout << token.value << ": " << token.typeName() << std::endl;
-    }*/
+    }
   auto ast = Parser(tokens).parse();
   std::ofstream mlogFile(argv[2]);
-  ast->outMlogCode(mlogFile);
+  ast->outMlogCode(mlogFile);*/
   return 0;
 }
