@@ -201,7 +201,7 @@ struct ASTCellAccessNode : public ASTNode
   std::string outMlogCode(std::ostream &stream) override
   {
     std::string rvalue = rightNodeOutMlogCode(stream);
-    stream << "read " << argumentValue << " " << token.value << " " << rvalue << std::endl;
+    stream << (accessType == Read ? "read " : "write ") << argumentValue << " " << token.value << " " << rvalue << std::endl;
     return "";
   }
 };
@@ -399,8 +399,19 @@ class Parser
         mainBlock->childs.pop_back();
         root = new ASTCellAccessNode(mTokens.at(mPos).value, mTokens.at(mPos-2).value, ASTCellAccessNode::CellAccessType::Read);
         consume();
-        root->right = parseExpression(0);
+        root->right = parsePrimary();
         mainBlock->childs.push_back(root);
+        return root;
+      }
+        size_t assigmentPos = mPos;
+        while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].type != Type::Assigment);
+      if(mTokens.at(++assigmentPos).type == Type::Variable) {
+        root = new ASTCellAccessNode(mTokens.at(mPos).value, mTokens.at(assigmentPos).value, ASTCellAccessNode::CellAccessType::Write);
+        
+        consume();
+        root->right = parsePrimary();
+        mainBlock->childs.push_back(root);
+        mPos = assigmentPos + 1;
       }
       return root;
     }
@@ -436,10 +447,10 @@ public:
 
 #include <fstream>
 
-int main()
+int main(int argc, char **argv)
 {
   std::vector<Token> tokens;
-  std::ifstream file("test.mlogpp");
+  std::ifstream file(argv[1]);
     
   while(!file.eof()) {
     std::string txt;
@@ -447,14 +458,11 @@ int main()
     auto tmptokens = tokenize(txt);
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
   }
-    for(const auto &token : tokens) {
+    /*for(const auto &token : tokens) {
         std::cout << token.value << ": " << token.typeName() << std::endl;
-    }
-    try{
+    }*/
   auto ast = Parser(tokens).parse();
-  ast->outMlogCode(std::cout);
-    }catch(const std::length_error &ex){
-      std::cerr<<"\tEx"<<ex.what()<<std::endl;
-    }
-    return 0;
+  std::ofstream mlogFile(argv[2]);
+  ast->outMlogCode(mlogFile);
+  return 0;
 }
