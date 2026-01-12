@@ -4,6 +4,7 @@
 #include <string>
 #include <regex>
 #include <map>
+#include <iostream>
 
 namespace mlogpp
 {
@@ -31,12 +32,17 @@ namespace mlogpp
     Token(size_t ln, const std::string &v, Type t)
       : mValue{v}, mLineNumber{ln}, mType{t} {}
     
-    const std::string getTypeName()
+    std::string getTypeName()
     {
       auto name = TypeMap[mType];
       return name.empty() ? "Undefined" : name;
     }
-      
+    
+    void info() const
+    {
+      std::cout << mLineNumber << ": [" << mValue << "] - " << const_cast<Token *>(this)->getTypeName() << std::endl; 
+    }
+    
     friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line);
       
     private:
@@ -58,7 +64,20 @@ namespace mlogpp
     auto wordsBegin = std::sregex_iterator(line.begin(), line.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
-        std::smatch match = *i;
+      std::smatch match = *i;
+      if(match[1].matched) { // strings
+        static std::string string;
+        std::string subStr = match[1].str();
+        for(auto it = subStr.begin()+1; it != subStr.end()-1; ++it)
+          if(*it != '\\')
+            string += *it;
+        string += '\n';
+        if(line.back() == ';') {
+          string.pop_back(); // remove last '\n'
+          tokens.push_back({lineNumber, string, Token::Type::String});
+          string.clear();
+        }
+      } 
     }
     return 0;
   }

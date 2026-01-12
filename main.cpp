@@ -468,7 +468,17 @@ int main(int argc, char **argv)
   std::ofstream mlogFile(argv[2]);
   ast->outMlogCode(mlogFile);*/
   
-  mlogpp::Token t(1, "x", mlogpp::Token::Type::Variable);
-  std::cout<<t.getTypeName()<<std::endl;
+  std::vector<mlogpp::Token> tokens;
+  std::ifstream file(argv[1]);
+  size_t lineNumber = 0;
+    
+  while(!file.eof()) {
+    std::string line;
+    std::getline(file, line, '\n');
+    mlogpp::tokenize(lineNumber++, tokens, line);
+  }
+  for(const auto &token : tokens) {
+    token.info();
+  }
   return 0;
 }
