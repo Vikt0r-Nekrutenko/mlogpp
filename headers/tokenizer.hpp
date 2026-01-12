@@ -3,6 +3,7 @@
 
 #include <string>
 #include <regex>
+#include <map>
 
 namespace mlogpp
 {
@@ -19,8 +20,22 @@ namespace mlogpp
       Operator,
     };
     
+    std::map<Type, std::string> TypeMap {
+      {Type::Number, "Number"},
+      {Type::String, "String"},
+      {Type::Variable, "Variable"},
+      {Type::Assigment, "Assigment"},
+      {Type::Operator, "Operator"},
+    };
+    
     Token(size_t ln, const std::string &v, Type t)
       : mValue{v}, mLineNumber{ln}, mType{t} {}
+    
+    const std::string getTypeName()
+    {
+      auto name = TypeMap[mType];
+      return name.empty() ? "Undefined" : name;
+    }
       
     friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line);
       

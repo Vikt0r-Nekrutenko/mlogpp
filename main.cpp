@@ -450,8 +450,6 @@ public:
     }
 };
 
-mlogpp::Token::Type t1;
-
 int main(int argc, char **argv)
 {
   /*std::vector<Token> tokens;
@@ -469,5 +467,8 @@ int main(int argc, char **argv)
   auto ast = Parser(tokens).parse();
   std::ofstream mlogFile(argv[2]);
   ast->outMlogCode(mlogFile);*/
+  
+  mlogpp::Token t(1, "x", mlogpp::Token::Type::Variable);
+  std::cout<<t.getTypeName()<<std::endl;
   return 0;
 }
