@@ -6,7 +6,7 @@
 #include <queue>
 #include <regex>
 
-enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse};
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell};
 
 struct Token
 {
@@ -44,6 +44,7 @@ struct Token
         case Type::KeywordElse: return "KeywordElse";
         case Type::KeywordMlog: return "KeywordMlog";
         case Type::MultyString: return "MultyString";
+        case Type::Cell: return "Cell";
         default: return "None";
       }
     }
@@ -187,6 +188,24 @@ struct ASTMlogNode : public ASTNode
   }
 };
 
+struct ASTCellAccessNode : public ASTNode
+{
+  typedef enum _CellAccessType {
+    Read, Write,
+  } CellAccessType;
+  std::string argumentValue;
+  CellAccessType accessType;
+  
+  ASTCellAccessNode(const std::string &v, const std::string &av, CellAccessType t) : ASTNode({v, Type::Cell}), argumentValue{av},  accessType{t} {}
+  
+  std::string outMlogCode(std::ostream &stream) override
+  {
+    std::string rvalue = rightNodeOutMlogCode(stream);
+    stream << "read " << argumentValue << " " << token.value << " " << rvalue << std::endl;
+    return "";
+  }
+};
+
 std::string string;
 
 std::vector<Token> tokenize(const std::string &expression)
@@ -194,10 +213,10 @@ std::vector<Token> tokenize(const std::string &expression)
     std::vector<Token> tokens;
     const std::regex pattern(
           R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-          R"((and|or|if|else|mlog)|)" // keywords
+          R"((and|or|if|else|mlog|cell\d+)|)" // keywords
           R"((-?\d+\.\d+|-?\d+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
-          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}])|)" // operators
+          R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
           );
     auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
     auto wordEnd = std::sregex_iterator();
@@ -225,6 +244,8 @@ std::vector<Token> tokenize(const std::string &expression)
             tokens.push_back({keyword, Type::KeywordElse});
           } else if(keyword == "mlog") {
             tokens.push_back({keyword, Type::KeywordMlog});
+          } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
+            tokens.push_back({keyword, Type::Cell});
           }
         } else if(match[3].matched) { // numbers
           tokens.push_back({match[3].str(), Type::Number});
@@ -267,9 +288,10 @@ class Parser
           peek().type != Type::Endl &&
           peek().type != Type::BlockStart &&
           peek().type != Type::BlockEnd &&
+          peek().type != Type::Cell &&
         mTokens[mPos].precedence() >= minPrec) {
             Token operatr = consume();
-            if(operatr.value == ")") {
+            if(operatr.value == ")" || operatr.value == "]" || operatr.type == Type::Cell) {
               break;
             }
             auto node = new ASTOperatorNode(operatr);
@@ -283,8 +305,11 @@ class Parser
     ASTNode *parsePrimary()
     {
         Token t = consume();
-        if(t.value == "("){
+        if(t.value == "(" || t.value == "["){
           return parseExpression(0);
+        } else if(t.type == Type::Cell) {
+          mPos-=1;
+          return nullptr;
         }
         return new ASTNode(t);
     }
@@ -342,7 +367,8 @@ class Parser
     {
       //if(mTokens[mPos+1].type == Type::KeywordElse)
       //  lastIfBlock = static_cast<ASTIfBlock*>(mainBlock);
-      blocks.pop();
+      if(blocks.size() > 1)
+        blocks.pop();
       mainBlock = blocks.top();
       consume();
     }
@@ -364,16 +390,30 @@ class Parser
       mainBlock->childs.push_back(mlog);
     }
     
+    ASTCellAccessNode *parseCellAccess()
+    {
+      ASTCellAccessNode *root = nullptr;
+      if(mPos - 2 >= 0 && mTokens.at(mPos - 1).type == Type::Assigment && mTokens.at(mPos - 2).type == Type::Variable)
+      {
+        delete mainBlock->childs.back();
+        mainBlock->childs.pop_back();
+        root = new ASTCellAccessNode(mTokens.at(mPos).value, mTokens.at(mPos-2).value, ASTCellAccessNode::CellAccessType::Read);
+        consume();
+        root->right = parseExpression(0);
+        mainBlock->childs.push_back(root);
+      }
+      return root;
+    }
+    
 public:
 
     Parser(const std::vector<Token> &t) : mTokens{t} {}
 
     ASTNode *parse()
     {
-      if(mPos >= mTokens.size())
+      if(mPos >= mTokens.size() - 1) {
         return mainBlock; // main block
-      
-      if(peek().type == Type::KeywordElse) {
+      } else if(peek().type == Type::KeywordElse) {
         parseElseKeyword();
       } else if(peek().type == Type::KeywordIf) {
         parseIfKeyword();
@@ -387,6 +427,8 @@ public:
         consume();
       } else if (peek().type == Type::Variable || peek().type == Type::Assigment) {
         parseAssigment();
+      } else if (peek().type == Type::Cell) {
+        parseCellAccess();
       }
       return parse();
     }
@@ -408,7 +450,11 @@ int main()
     for(const auto &token : tokens) {
         std::cout << token.value << ": " << token.typeName() << std::endl;
     }
+    try{
   auto ast = Parser(tokens).parse();
   ast->outMlogCode(std::cout);
+    }catch(const std::length_error &ex){
+      std::cerr<<"\tEx"<<ex.what()<<std::endl;
+    }
     return 0;
 }
