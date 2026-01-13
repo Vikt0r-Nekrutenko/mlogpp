@@ -103,14 +103,8 @@ namespace mlogpp
     void checkError(const std::vector<Token> &tokens, bool isItFinalCheck=false)
     {
       Token last = tokens.back();
-      if(last.type == Token::Type::BlockStart)
-        mBlockBracketsChecker.addOpenBracket();
-      else if(last.type == Token::Type::BlockEnd) {
-        mBlockBracketsChecker.addCloseBracket();
-        if(!isItFinalCheck && mBlockBracketsChecker.compare() == -1)
-          throw getUnexpectedTokenMessage(last);
-        if(isItFinalCheck && mBlockBracketsChecker.compare() == +1)
-          throw getTooManyBlockStartBrackets();
+      if(last.value == "{" || last.value == "}") {
+        bracketsCheck(mBlockBracketsChecker, last, "{", "}", isItFinalCheck);
       }
     }
     
@@ -124,6 +118,19 @@ namespace mlogpp
     std::string getTooManyBlockStartBrackets() const
     {
       return std::string(" | SyntaxErrorHandler: Too many block start brackets - [{]");
+    }
+    
+    void bracketsCheck(BracketsChecker &checker, const Token &last, const std::string &ob, const std::string &cb, bool isItFinalCheck=false)
+    {
+      if(last.value == ob)
+        checker.addOpenBracket();
+      else if(last.value == cb) {
+        checker.addCloseBracket();
+        if(!isItFinalCheck && checker.compare() == -1)
+          throw getUnexpectedTokenMessage(last);
+        if(isItFinalCheck && checker.compare() == +1)
+          throw getTooManyBlockStartBrackets();
+      }
     }
     
     BracketsChecker mBlockBracketsChecker;
