@@ -8,6 +8,8 @@
 
 namespace mlogpp
 {
+  class SyntaxErrorHandler;
+  
   class Token
   {
     public:
@@ -44,7 +46,11 @@ namespace mlogpp
     };
     
     Token(size_t ln, const std::string &v, Type t)
-      : mValue{v}, mLineNumber{ln}, mType{t} {}
+      : line_number(ln), value(v), type(t), mValue{v}, mLineNumber{ln}, mType{t} {}
+      
+    const size_t line_number;
+    const std::string value;
+    const Type type;
     
     std::string getTypeName()
     {
@@ -52,12 +58,14 @@ namespace mlogpp
       return name.empty() ? "Undefined" : name;
     }
     
-    void info() const
+    std::string info() const
     {
-      std::cout << mLineNumber << ": [" << mValue << "] - " << const_cast<Token *>(this)->getTypeName() << std::endl; 
+      std::string info;
+      info += std::to_string(mLineNumber) + ": [" + mValue + "] - " + const_cast<Token *>(this)->getTypeName();
+      return info;
     }
     
-    friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line);
+    friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
       
     private:
     
@@ -66,7 +74,45 @@ namespace mlogpp
     Type mType;
   };
   
-  int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line)
+  class SyntaxErrorHandler
+  {
+    public:
+    
+    void addBlockStartBracket(const Token &t)
+    {
+      ++mBlockStartBrackets;
+    }
+    
+    void addBlockEndBracket(const Token &t)
+    {
+      ++mBlockEndBrackets;
+      if(mBlockEndBrackets > mBlockStartBrackets)
+        throw getUnexpectedTokenMessage(t);
+    }
+    
+    void checkBlockBrackets()
+    {
+      if(mBlockEndBrackets != mBlockStartBrackets)
+        throw getTooManyBlockStartBrackets();
+    }
+    
+    private:
+    
+    std::string getUnexpectedTokenMessage(const Token &t) const
+    {
+      return std::to_string(t.line_number) + std::string(" | SyntaxErrorHandler: Unexpected token - [") + t.value + "]";
+    }
+    
+    std::string getTooManyBlockStartBrackets() const
+    {
+      return std::string(" | SyntaxErrorHandler: Too many block start brackets - [{]");
+    }
+    
+    size_t mBlockStartBrackets = 0;
+    size_t mBlockEndBrackets = 0;
+  };
+  
+  int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)
   {
     const std::regex pattern(
           R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
@@ -112,11 +158,13 @@ namespace mlogpp
           std::string buffer = match[5].str();
                if(buffer == "=")
             tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
-          else if(buffer == "{")
+          else if(buffer == "{") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
-          else if(buffer == "}")
+            seh.addBlockStartBracket(tokens.back());
+          } else if(buffer == "}") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
-          else if(buffer == ";")
+            seh.addBlockEndBracket(tokens.back());
+          } else if(buffer == ";")
             tokens.push_back({lineNumber, buffer, Token::Type::Endl});
           else
             tokens.push_back({lineNumber, buffer, Token::Type::Operator});

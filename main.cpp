@@ -468,17 +468,23 @@ int main(int argc, char **argv)
   std::ofstream mlogFile(argv[2]);
   ast->outMlogCode(mlogFile);*/
   
+  mlogpp::SyntaxErrorHandler seh;
   std::vector<mlogpp::Token> tokens;
   std::ifstream file(argv[1]);
   size_t lineNumber = 0;
     
-  while(!file.eof()) {
-    std::string line;
-    std::getline(file, line, '\n');
-    mlogpp::tokenize(lineNumber++, tokens, line);
-  }
-  for(const auto &token : tokens) {
-    token.info();
+  try {
+    while(!file.eof()) {
+      std::string line;
+      std::getline(file, line, '\n');
+      mlogpp::tokenize(lineNumber++, tokens, line, seh);
+    }
+    seh.checkBlockBrackets();
+    for(const auto &token : tokens) {
+      std::cout << token.info() << std::endl;
+    }
+  } catch(const std::string &ex) {
+    std::cerr << "\t" << ex << std::endl;
   }
   return 0;
 }
