@@ -74,26 +74,44 @@ namespace mlogpp
     Type mType;
   };
   
+  class BracketsChecker
+  {
+    public:
+    
+    inline void addOpenBracket() { ++mOpenBracketCounter; }
+    inline void addCloseBracket() { ++mCloseBracketCounter; }
+    
+    int compare() const
+    {
+      if(mOpenBracketCounter > mCloseBracketCounter)
+        return +1;
+      if(mOpenBracketCounter < mCloseBracketCounter)
+        return -1;
+      return 0;
+    }
+    
+    private:
+    
+    size_t mOpenBracketCounter {0};
+    size_t mCloseBracketCounter {0};
+  };
+  
   class SyntaxErrorHandler
   {
     public:
     
-    void addBlockStartBracket(const Token &t)
+    void checkError(const std::vector<Token> &tokens, bool isItFinalCheck=false)
     {
-      ++mBlockStartBrackets;
-    }
-    
-    void addBlockEndBracket(const Token &t)
-    {
-      ++mBlockEndBrackets;
-      if(mBlockEndBrackets > mBlockStartBrackets)
-        throw getUnexpectedTokenMessage(t);
-    }
-    
-    void checkBlockBrackets()
-    {
-      if(mBlockEndBrackets != mBlockStartBrackets)
-        throw getTooManyBlockStartBrackets();
+      Token last = tokens.back();
+      if(last.type == Token::Type::BlockStart)
+        mBlockBracketsChecker.addOpenBracket();
+      else if(last.type == Token::Type::BlockEnd) {
+        mBlockBracketsChecker.addCloseBracket();
+        if(!isItFinalCheck && mBlockBracketsChecker.compare() == -1)
+          throw getUnexpectedTokenMessage(last);
+        if(isItFinalCheck && mBlockBracketsChecker.compare() == +1)
+          throw getTooManyBlockStartBrackets();
+      }
     }
     
     private:
@@ -108,8 +126,7 @@ namespace mlogpp
       return std::string(" | SyntaxErrorHandler: Too many block start brackets - [{]");
     }
     
-    size_t mBlockStartBrackets = 0;
-    size_t mBlockEndBrackets = 0;
+    BracketsChecker mBlockBracketsChecker;
   };
   
   int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)
@@ -136,6 +153,7 @@ namespace mlogpp
           string.pop_back(); // remove last '\n'
           tokens.push_back({lineNumber, string, Token::Type::String});
           string.clear();
+          seh.checkError(tokens);
         }
       } else if(match[2].matched) { // keywords
           std::string keyword = match[2].str();
@@ -150,24 +168,26 @@ namespace mlogpp
           } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
             tokens.push_back({lineNumber, keyword, Token::Type::Cell});
           }
+          seh.checkError(tokens);
       } else if(match[3].matched) { // numbers
           tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
+          seh.checkError(tokens);
       } else if(match[4].matched) { // variables
             tokens.push_back({lineNumber, match[4].str(), Token::Type::Variable});
+            seh.checkError(tokens);
       } else if(match[5].matched) { // operators
           std::string buffer = match[5].str();
                if(buffer == "=")
             tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
           else if(buffer == "{") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
-            seh.addBlockStartBracket(tokens.back());
           } else if(buffer == "}") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
-            seh.addBlockEndBracket(tokens.back());
           } else if(buffer == ";")
             tokens.push_back({lineNumber, buffer, Token::Type::Endl});
           else
             tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+          seh.checkError(tokens);
       }
     }
     return 0;

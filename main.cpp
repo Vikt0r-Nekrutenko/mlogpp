@@ -471,7 +471,7 @@ int main(int argc, char **argv)
   mlogpp::SyntaxErrorHandler seh;
   std::vector<mlogpp::Token> tokens;
   std::ifstream file(argv[1]);
-  size_t lineNumber = 0;
+  size_t lineNumber = 1;
     
   try {
     while(!file.eof()) {
@@ -479,7 +479,7 @@ int main(int argc, char **argv)
       std::getline(file, line, '\n');
       mlogpp::tokenize(lineNumber++, tokens, line, seh);
     }
-    seh.checkBlockBrackets();
+    seh.checkError(tokens, true);
     for(const auto &token : tokens) {
       std::cout << token.info() << std::endl;
     }
