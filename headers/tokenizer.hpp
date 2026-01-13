@@ -124,8 +124,9 @@ namespace mlogpp
     {
       if(last.value == ob)
         checker.addOpenBracket();
-      else if(last.value == cb) {
-        checker.addCloseBracket();
+      if(last.value == cb) {
+        if(!isItFinalCheck)
+          checker.addCloseBracket();
         if(!isItFinalCheck && checker.compare() == -1)
           throw getUnexpectedTokenMessage(last);
         if(isItFinalCheck && checker.compare() == +1)
@@ -184,16 +185,17 @@ namespace mlogpp
             seh.checkError(tokens);
       } else if(match[5].matched) { // operators
           std::string buffer = match[5].str();
-               if(buffer == "=")
+               if(buffer == "=") {
             tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
-          else if(buffer == "{") {
+          } else if(buffer == "{") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
           } else if(buffer == "}") {
             tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
-          } else if(buffer == ";")
+          } else if(buffer == ";") {
             tokens.push_back({lineNumber, buffer, Token::Type::Endl});
-          else
+          } else {
             tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+          }
           seh.checkError(tokens);
       }
     }
