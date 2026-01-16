@@ -105,6 +105,10 @@ namespace mlogpp
       Token last = tokens.back();
       if(last.value == "{" || last.value == "}") {
         bracketsCheck(mBlockBracketsChecker, last, "{", "}", isItFinalCheck);
+      } else if(last.value == "(" || last.value == ")") {
+        bracketsCheck(mArkBracketsChecker, last, "(", ")", isItFinalCheck);
+      } else if(last.value == "[" || last.value == "]") {
+        bracketsCheck(mSquareBracketsChecker, last, "[", "]", isItFinalCheck);
       }
     }
     
@@ -115,9 +119,9 @@ namespace mlogpp
       return std::to_string(t.line_number) + std::string(" | SyntaxErrorHandler: Unexpected token - [") + t.value + "]";
     }
     
-    std::string getTooManyBlockStartBrackets() const
+    std::string getTooManyTokens(const Token &t) const
     {
-      return std::string(" | SyntaxErrorHandler: Too many block start brackets - [{]");
+      return std::string(" | SyntaxErrorHandler: Too many tokens - [") + t.value + "]";
     }
     
     void bracketsCheck(BracketsChecker &checker, const Token &last, const std::string &ob, const std::string &cb, bool isItFinalCheck=false)
@@ -130,11 +134,13 @@ namespace mlogpp
         if(!isItFinalCheck && checker.compare() == -1)
           throw getUnexpectedTokenMessage(last);
         if(isItFinalCheck && checker.compare() == +1)
-          throw getTooManyBlockStartBrackets();
+          throw getTooManyTokens(Token(last.line_number, ob, Token::Type::Operator));
       }
     }
     
     BracketsChecker mBlockBracketsChecker;
+    BracketsChecker mArkBracketsChecker;
+    BracketsChecker mSquareBracketsChecker;
   };
   
   int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)

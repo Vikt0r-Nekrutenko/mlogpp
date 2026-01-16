@@ -11,7 +11,7 @@
 
 #include "tokenizer.hpp"
 
-enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell};
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell, FunctionImplementation, FunctionName, FunctionCall};
 
 struct Token
 {
@@ -50,6 +50,9 @@ struct Token
         case Type::KeywordMlog: return "KeywordMlog";
         case Type::MultyString: return "MultyString";
         case Type::Cell: return "Cell";
+        case Type::FunctionImplementation: return "FunctionImplementation";
+        case Type::FunctionName: return "FunctionName";
+        case Type::FunctionCall: return "FunctionCall";
         default: return "None";
       }
     }
@@ -162,6 +165,15 @@ struct ASTIfBlock : public ASTBlock
   }
 };
 
+struct ASTFunctionImplementationBlock : public ASTBlock
+{
+  ASTFunctionImplementationBlock(const std::string &name) : ASTBlock()
+  {
+    token.type = Type::FunctionImplementation;
+    token.value = name;
+  }
+};
+
 struct ASTElseBlock : public ASTBlock
 {
   ASTElseBlock() : ASTBlock() 
@@ -218,7 +230,7 @@ std::vector<Token> tokenize(const std::string &expression)
     std::vector<Token> tokens;
     const std::regex pattern(
           R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-          R"((and|or|if|else|mlog|cell\d+)|)" // keywords
+          R"((and|or|if|else|mlog|cell\d+|function)|)" // keywords
           R"((-?\d+\.\d+|-?\d+)|)" // numbers
           R"(([a-zA-Z_][\w]*)|)" // variables
           R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
@@ -251,10 +263,15 @@ std::vector<Token> tokenize(const std::string &expression)
             tokens.push_back({keyword, Type::KeywordMlog});
           } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
             tokens.push_back({keyword, Type::Cell});
+          } else if(keyword == "function") {
+            tokens.push_back({keyword, Type::FunctionImplementation});
           }
         } else if(match[3].matched) { // numbers
           tokens.push_back({match[3].str(), Type::Number});
         } else if(match[4].matched) { // variables
+          if(!tokens.empty() && tokens.back().type == Type::FunctionImplementation)
+            tokens.push_back({match[4].str(), Type::FunctionName});
+          else
             tokens.push_back({match[4].str(), Type::Variable});
         } else if(match[5].matched) { // operators
           std::string buffer = match[5].str();
@@ -324,10 +341,28 @@ class Parser
       return static_cast<ASTBlock*>(mainBlock->childs.back());
     }
     
+    size_t findFunctionByName(const std::string &name)
+    {
+      for(size_t i = 0; i < mTokens.size(); ++i) {
+         if(mTokens[i+1].value == name && mTokens[i].type == Type::FunctionImplementation) {
+           return i;
+         }
+       }
+       return mPos;
+    }
+    
     template <class BlockType>
     ASTBlock *addNewBlock()
     {
       mainBlock->childs.push_back(new BlockType);
+      blocks.push(lastChildAsBlock());
+      return blocks.top();
+    }
+    
+    template <class BlockType>
+    ASTBlock *addNewBlock(BlockType *block)
+    {
+      mainBlock->childs.push_back(block);
       blocks.push(lastChildAsBlock());
       return blocks.top();
     }
@@ -421,12 +456,34 @@ class Parser
       return root;
     }
     
+    void parseFunctionImplementation()
+    {
+      consume();
+      std::string functionName = consume().value;
+      consume();
+      consume();
+//      std::cerr<<"\t"<<peek().value<<std::endl;throw;
+      if(mainBlock != nullptr) {
+        mainBlock = addNewBlock<ASTFunctionImplementationBlock>(new ASTFunctionImplementationBlock(functionName));
+      } else {
+        mainBlock = new ASTFunctionImplementationBlock(functionName);
+        blocks.push(mainBlock);
+      }
+      consume();
+    }
+    
 public:
 
     Parser(const std::vector<Token> &t) : mTokens{t} {}
 
     ASTNode *parse()
     {
+     if(mainBlock == nullptr && blocks.empty()) {
+       mPos = findFunctionByName("main");
+       parseFunctionImplementation();
+       if(mainBlock == nullptr && blocks.empty())
+        throw "'function main()' does not exist!";
+     }
       if(mPos >= mTokens.size() - 1) {
         return mainBlock; // main block
       } else if(peek().type == Type::KeywordElse) {
@@ -445,6 +502,8 @@ public:
         parseAssigment();
       } else if (peek().type == Type::Cell) {
         parseCellAccess();
+      } else if(peek().type == Type::FunctionImplementation) {
+        parseFunctionImplementation();
       }
       return parse();
     }
@@ -452,7 +511,7 @@ public:
 
 int main(int argc, char **argv)
 {
-  /*std::vector<Token> tokens;
+  std::vector<Token> tokens;
   std::ifstream file(argv[1]);
     
   while(!file.eof()) {
@@ -465,10 +524,12 @@ int main(int argc, char **argv)
         std::cout << token.value << ": " << token.typeName() << std::endl;
     }
   auto ast = Parser(tokens).parse();
-  std::ofstream mlogFile(argv[2]);
-  ast->outMlogCode(mlogFile);*/
+  //std::ofstream mlogFile(argv[2]);
+  std::cout << "________Mlog code:________" << std::endl;
+  //ast->outMlogCode(mlogFile);
+  ast->outMlogCode(std::cout);
   
-  mlogpp::SyntaxErrorHandler seh;
+  /*mlogpp::SyntaxErrorHandler seh;
   std::vector<mlogpp::Token> tokens;
   std::ifstream file(argv[1]);
   size_t lineNumber = 1;
@@ -485,6 +546,25 @@ int main(int argc, char **argv)
     }
   } catch(const std::string &ex) {
     std::cerr << "\t" << ex << std::endl;
-  }
+  }*/
   return 0;
 }
+
+/*
+function foo(str1, str2) {
+  tmp = str1;
+  str1 = str2;
+  str2 = tmp;
+  return str1 + str2;
+}
+
+  set a 4
+  set b 5
+  op lessThan _foo_result a b
+  set f _foo_result
+print f
+printflush message1
+end
+
+
+*/
