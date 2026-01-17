@@ -73,8 +73,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
             seh.checkError(tokens);
         } else if(match[4].matched) { // variables
-            tokens.push_back({lineNumber, match[4].str(), Token::Type::Variable});
-            seh.checkError(tokens);
+            tokenizeName(lineNumber, tokens, match[4].str(), seh);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
             tokenizeOperators(lineNumber, tokens, buffer, seh);
@@ -112,6 +111,8 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
     } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
+    } else if(keyword == "function") {
+        tokens.push_back({lineNumber, keyword, Token::Type::FunctionKeyword});
     }
     seh.checkError(tokens);
     return 0;
@@ -130,6 +131,16 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
+    seh.checkError(tokens);
+    return 0;
+}
+
+int mlogpp::tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const std::string name, SyntaxErrorHandler &seh)
+{
+    if(!tokens.empty() && tokens.back().type() == Token::Type::FunctionKeyword)
+        tokens.push_back({lineNumber, name, Token::Type::FunctionName});
+    else
+        tokens.push_back({lineNumber, name, Token::Type::Variable});
     seh.checkError(tokens);
     return 0;
 }

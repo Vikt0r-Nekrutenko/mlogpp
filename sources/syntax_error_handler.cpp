@@ -24,6 +24,10 @@ void mlogpp::SyntaxErrorHandler::checkError(const std::vector<Token> &tokens, bo
     } else if(last.value() == "[" || last.value() == "]") {
         bracketsCheck(mSquareBracketsChecker, last, "[", "]", isItFinalCheck);
     }
+
+    if(isItFinalCheck && findMainFunction(tokens) == false) {
+        throw "SyntaxErrorHandler: Not found 'main' function";
+    }
 }
 
 std::string mlogpp::SyntaxErrorHandler::getUnexpectedTokenMessage(const Token &t) const
@@ -48,4 +52,13 @@ void mlogpp::SyntaxErrorHandler::bracketsCheck(BracketsChecker &checker, const T
         if(isItFinalCheck && checker.compare() == +1)
             throw getTooManyTokens(Token(last.lineNumber(), ob, Token::Type::Operator));
     }
+}
+
+bool mlogpp::SyntaxErrorHandler::findMainFunction(const std::vector<Token> &tokens) const
+{
+    for(auto token : tokens) {
+        if(token.type() == Token::Type::FunctionName && token.value() == "main")
+            return true;
+    }
+    return false;
 }

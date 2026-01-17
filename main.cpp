@@ -18,14 +18,17 @@ int main(int argc, char **argv)
       std::string line;
       std::getline(file, line, '\n');
       mlogpp::tokenize(lineNumber++, tokens, line, seh);
+      seh.checkError(tokens, true);
     }
-    seh.checkError(tokens, true);
     for(const auto &token : tokens) {
       std::cout << token.info() << std::endl;
     }
   } catch(const std::string &ex) {
     std::cerr << "\t" << ex << std::endl;
+  } catch(const char *ex) {
+      std::cerr << "\t" << ex << std::endl;
   }
+
   return 0;
 }
 

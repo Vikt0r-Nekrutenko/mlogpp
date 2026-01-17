@@ -37,6 +37,8 @@ private:
 
     void bracketsCheck(BracketsChecker &checker, const Token &last, const std::string &ob, const std::string &cb, bool isItFinalCheck=false);
 
+    bool findMainFunction(const std::vector<Token> &tokens) const;
+
     BracketsChecker mBlockBracketsChecker;
     BracketsChecker mArkBracketsChecker;
     BracketsChecker mSquareBracketsChecker;
