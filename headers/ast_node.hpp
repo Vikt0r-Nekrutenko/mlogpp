@@ -50,13 +50,6 @@ struct ASTElseBlock : public ASTNode
     std::string outMlogCode(std::ostream &stream) override;
 };
 
-struct ASTMlogNode : public ASTNode
-{
-    ASTMlogNode(const mlogpp::Token &t);
-
-    std::string outMlogCode(std::ostream &stream) override;
-};
-
 struct ASTCellAccessNode : public ASTNode
 {
     typedef enum _CellAccessType {

@@ -31,6 +31,10 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << "set " << left->token.value() << " " << value << std::endl;
         return left->token.value();
     }
+    if(token.type() == mlogpp::Token::Type::MlogValue) {
+        stream << token.value() << std::endl;
+    }
+
     for(auto ch : childs) {
         ch->outMlogCode(stream);
     }
@@ -74,15 +78,6 @@ std::string ASTElseBlock::outMlogCode(std::ostream &stream)
     ASTNode::outMlogCode(stream);
     stream << label1 << ":" << std::endl;
     return "";
-}
-
-ASTMlogNode::ASTMlogNode(const Token &t)
-    : ASTNode(t) {}
-
-std::string ASTMlogNode::outMlogCode(std::ostream &stream)
-{
-    stream << token.value() << std::endl;
-    return token.value();
 }
 
 ASTCellAccessNode::ASTCellAccessNode(const Token &t, const std::string &av, CellAccessType cat)

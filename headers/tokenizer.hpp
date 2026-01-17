@@ -21,6 +21,7 @@ class Token
         Assigment,
         Operator,
         KeywordMlog,
+        MlogValue,
         BlockStart,
         BlockEnd,
         Endl,
@@ -46,6 +47,7 @@ class Token
         {Type::CellAccess, "CellAccess"},
         {Type::KeywordFunction, "FunctionKeyword"},
         {Type::FunctionName, "FunctionName"},
+        {Type::MlogValue, "MlogValue"},
     };
 
     Token(size_t ln, const std::string &v, Type t);

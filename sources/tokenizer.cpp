@@ -92,7 +92,7 @@ int mlogpp::tokenizeStrings(const std::smatch &match, size_t lineNumber, std::ve
     string += '\n';
     if(line.back() == ';') {
         string.pop_back(); // remove last '\n'
-        tokens.push_back({lineNumber, string, Token::Type::String});
+        tokens.push_back({lineNumber, string, tokens.back().type() == Token::Type::KeywordMlog ? Token::Type::MlogValue : Token::Type::String});
         string.clear();
         seh.checkError(tokens);
     }

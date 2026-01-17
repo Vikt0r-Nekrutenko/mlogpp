@@ -107,7 +107,7 @@ void Parser::parseAssigment()
 void Parser::parseMlogKeyword()
 {
     consume();
-    auto mlog = new ASTMlogNode(consume());
+    auto mlog = new ASTNode(consume());
     mainBlock->childs.push_back(mlog);
 }
 
