@@ -77,18 +77,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             seh.checkError(tokens);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
-            if(buffer == "=") {
-                tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
-            } else if(buffer == "{") {
-                tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
-            } else if(buffer == "}") {
-                tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
-            } else if(buffer == ";") {
-                tokens.push_back({lineNumber, buffer, Token::Type::Endl});
-            } else {
-                tokens.push_back({lineNumber, buffer, Token::Type::Operator});
-            }
-            seh.checkError(tokens);
+            tokenizeOperators(lineNumber, tokens, buffer, seh);
         }
     }
     return 0;
@@ -123,6 +112,23 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
     } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
+    }
+    seh.checkError(tokens);
+    return 0;
+}
+
+int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::string buffer, SyntaxErrorHandler &seh)
+{
+    if(buffer == "=") {
+        tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
+    } else if(buffer == "{") {
+        tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
+    } else if(buffer == "}") {
+        tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
+    } else if(buffer == ";") {
+        tokens.push_back({lineNumber, buffer, Token::Type::Endl});
+    } else {
+        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
     seh.checkError(tokens);
     return 0;
