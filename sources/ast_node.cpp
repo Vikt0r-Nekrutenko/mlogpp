@@ -1,9 +1,10 @@
 #include "ast_node.hpp"
 #include <iostream>
 
+using namespace mlogpp;
 size_t ASTNode::tempVariableN = 0;
 
-ASTNode::ASTNode(const Token &t) : token{t} {}
+ASTNode::ASTNode(const Token &t) : token(Token(t.lineNumber(), t.value(), t.type())) {}
 
 std::string ASTNode::leftNodeOutMlogCode(std::ostream &stream)
 {
@@ -21,19 +22,20 @@ std::string ASTNode::rightNodeOutMlogCode(std::ostream &stream)
 
 std::string ASTNode::outMlogCode(std::ostream &stream)
 {
-    if(token.type == Type::MultyString)
-        return "\"" + token.value + "\"";
-    if(token.type == Type::Number || token.type == Type::Variable)
-        return token.value;
-    if(token.type == Type::Assigment) {
+    if(token.type() == Token::Token::Type::String)
+        return "\"" + token.value() + "\"";
+    if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable)
+        return token.value();
+    if(token.type() == Token::Type::Assigment) {
         std::string value = rightNodeOutMlogCode(stream);
-        stream << "set " << left->token.value << " " << value << std::endl;
-        return left->token.value;
+        stream << "set " << left->token.value() << " " << value << std::endl;
+        return left->token.value();
     }
     return "";
 }
 
-ASTOperatorNode::ASTOperatorNode(const Token &t) : ASTNode(t) {}
+ASTOperatorNode::ASTOperatorNode(const Token &t)
+    : ASTNode(t) {}
 
 std::string ASTOperatorNode::outMlogCode(std::ostream &stream)
 {
@@ -44,7 +46,8 @@ std::string ASTOperatorNode::outMlogCode(std::ostream &stream)
     return resultVariable;
 }
 
-ASTBlock::ASTBlock() : ASTNode{Token{"{", Type::BlockStart}} {}
+ASTBlock::ASTBlock(const Token &t)
+    : ASTNode(t) {}
 
 std::string ASTBlock::outMlogCode(std::ostream &stream)
 {
@@ -54,15 +57,16 @@ std::string ASTBlock::outMlogCode(std::ostream &stream)
     return "";
 }
 
-ASTIfBlock::ASTIfBlock() : ASTBlock()
+ASTIfBlock::ASTIfBlock(const Token &t)
+    : ASTBlock(t)
 {
-    token.type = Type::KeywordIf;
-    token.value = "if";
+    token.type() = Token::Type::KeywordIf;
+    token.value() = "if";
 }
 
 std::string ASTIfBlock::outMlogCode(std::ostream &stream)
 {
-    if(token.type == Type::KeywordIf) {
+    if(token.type() == Token::Token::Type::KeywordIf) {
         std::string leftValue = leftNodeOutMlogCode(stream);
         stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
 
@@ -72,21 +76,15 @@ std::string ASTIfBlock::outMlogCode(std::ostream &stream)
     return "";
 }
 
-ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const std::string &name) : ASTBlock()
-{
-    token.type = Type::FunctionImplementation;
-    token.value = name;
-}
+ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const Token &t)
+    : ASTBlock(t) {}
 
-ASTElseBlock::ASTElseBlock() : ASTBlock()
-{
-    token.type = Type::KeywordElse;
-    token.value = "else";
-}
+ASTElseBlock::ASTElseBlock(const Token &t)
+    : ASTBlock(t) {}
 
 std::string ASTElseBlock::outMlogCode(std::ostream &stream)
 {
-    if(token.type == Type::KeywordElse) {
+    if(token.type() == Token::Type::KeywordElse) {
         stream << label << ":" << std::endl;
         ASTBlock::outMlogCode(stream);
         stream << label1 << ":" << std::endl;
@@ -94,19 +92,21 @@ std::string ASTElseBlock::outMlogCode(std::ostream &stream)
     return "";
 }
 
-ASTMlogNode::ASTMlogNode(const std::string &v) : ASTNode({v, Type::KeywordMlog}) {}
+ASTMlogNode::ASTMlogNode(const Token &t)
+    : ASTNode(t) {}
 
 std::string ASTMlogNode::outMlogCode(std::ostream &stream)
 {
-    stream << token.value << std::endl;
-    return token.value;
+    stream << token.value() << std::endl;
+    return token.value();
 }
 
-ASTCellAccessNode::ASTCellAccessNode(const std::string &v, const std::string &av, CellAccessType t) : ASTNode({v, Type::Cell}), argumentValue{av},  accessType{t} {}
+ASTCellAccessNode::ASTCellAccessNode(const Token &t, const std::string &av, CellAccessType cat)
+    : ASTNode(t), argumentValue{av},  accessType{cat} {}
 
 std::string ASTCellAccessNode::outMlogCode(std::ostream &stream)
 {
     std::string rvalue = rightNodeOutMlogCode(stream);
-    stream << (accessType == Read ? "read " : "write ") << argumentValue << " " << token.value << " " << rvalue << std::endl;
+    stream << (accessType == Read ? "read " : "write ") << argumentValue << " " << token.value() << " " << rvalue << std::endl;
     return "";
 }

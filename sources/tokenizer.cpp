@@ -112,7 +112,7 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
     } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
     } else if(keyword == "function") {
-        tokens.push_back({lineNumber, keyword, Token::Type::FunctionKeyword});
+        tokens.push_back({lineNumber, keyword, Token::Type::KeywordFunction});
     }
     seh.checkError(tokens);
     return 0;
@@ -137,7 +137,7 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
 
 int mlogpp::tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const std::string name, SyntaxErrorHandler &seh)
 {
-    if(!tokens.empty() && tokens.back().type() == Token::Type::FunctionKeyword)
+    if(!tokens.empty() && tokens.back().type() == Token::Type::KeywordFunction)
         tokens.push_back({lineNumber, name, Token::Type::FunctionName});
     else
         tokens.push_back({lineNumber, name, Token::Type::Variable});

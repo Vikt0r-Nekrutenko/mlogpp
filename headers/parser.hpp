@@ -4,6 +4,8 @@
 #include <regex>
 #include "ast_node.hpp"
 
+using namespace mlogpp;
+
 std::vector<Token> tokenize(const std::string &expression);
 
 class Parser
@@ -30,7 +32,7 @@ class Parser
     template <class BlockType>
     ASTBlock *addNewBlock()
     {
-        mainBlock->childs.push_back(new BlockType);
+        mainBlock->childs.push_back(new BlockType(peek()));
         blocks.push(lastChildAsBlock());
         return blocks.top();
     }

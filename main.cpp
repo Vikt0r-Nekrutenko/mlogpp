@@ -1,6 +1,6 @@
 // beta 2.1
 
-#include "tokenizer.hpp"
+#include "parser.hpp"
 #include "syntax_error_handler.hpp"
 
 #include <iostream>
@@ -22,6 +22,9 @@ void readFile(std::ifstream &sourceFile, std::ostream &resultFile) {
         for(const auto &token : tokens) {
             std::cout << token.info() << std::endl;
         }
+        auto ast = Parser(tokens).parse();
+        std::cout << "________Mlog code:________" << std::endl;
+        ast->outMlogCode(resultFile);
     } catch(const std::string &ex) {
         std::cerr << "\t" << ex << std::endl;
     } catch(const char *ex) {
@@ -33,7 +36,7 @@ int main(int argc, char **argv)
 {
     std::ifstream sourceFile(argv[1]);
     std::ofstream outFile(argc > 2 ? argv[2] : "");
-    std::ostream *resultFile = (argc > 2) ? &outFile : &std::cout;
+    std::ostream *resultFile = /*(argc > 2) ? &outFile :*/ &std::cout;
 
     readFile(sourceFile, *resultFile);
     return 0;

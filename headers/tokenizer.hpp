@@ -27,7 +27,7 @@ class Token
         KeywordIf,
         KeywordElse,
         CellAccess,
-        FunctionKeyword,
+        KeywordFunction,
         FunctionName,
     };
 
@@ -44,7 +44,7 @@ class Token
         {Type::BlockEnd, "BlockEnd"},
         {Type::Endl, "Endl"},
         {Type::CellAccess, "CellAccess"},
-        {Type::FunctionKeyword, "FunctionKeyword"},
+        {Type::KeywordFunction, "FunctionKeyword"},
         {Type::FunctionName, "FunctionName"},
     };
 

@@ -12,7 +12,7 @@ while(!file.eof()) {
     tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
 }
 for(const auto &token : tokens) {
-    std::cout << token.value << ": " << token.typeName() << std::endl;
+    std::cout << token.value() << ": " << token.type()Name() << std::endl;
 }
 auto ast = Parser(tokens).parse();
 //std::ofstream mlogFile(argv[2]);
@@ -20,71 +20,6 @@ std::cout << "________Mlog code:________" << std::endl;
 //ast->outMlogCode(mlogFile);
 ast->outMlogCode(std::cout);
 */
-
-std::vector<Token> tokenize(const std::string &expression)
-{
-    std::vector<Token> tokens;
-    const std::regex pattern(
-        R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-        R"((and|or|if|else|mlog|cell\d+|function)|)" // keywords
-        R"((-?\d+\.\d+|-?\d+)|)" // numbers
-        R"(([a-zA-Z_][\w]*)|)" // variables
-        R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
-        );
-    auto wordsBegin = std::sregex_iterator(expression.begin(), expression.end(), pattern);
-    auto wordEnd = std::sregex_iterator();
-    for(auto i = wordsBegin; i != wordEnd; ++i) {
-        std::smatch match = *i;
-
-        if(match[1].matched) { // strings
-            std::string subStr = match[1].str();
-            for(auto it = subStr.begin()+1; it != subStr.end()-1; ++it)
-                if(*it != '\\')
-                    string += *it;
-            string += '\n';
-            if(expression.back() == ';') {
-                string.pop_back(); // remove last '\n'
-                tokens.push_back({string, Type::MultyString});
-                string.clear();
-            }
-        } else if(match[2].matched) { // keywords
-            std::string keyword = match[2].str();
-            if(keyword == "and" || keyword == "or") {
-                tokens.push_back({keyword, Type::Operator});
-            } else if(keyword == "if") {
-                tokens.push_back({keyword, Type::KeywordIf});
-            } else if(keyword == "else") {
-                tokens.push_back({keyword, Type::KeywordElse});
-            } else if(keyword == "mlog") {
-                tokens.push_back({keyword, Type::KeywordMlog});
-            } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
-                tokens.push_back({keyword, Type::Cell});
-            } else if(keyword == "function") {
-                tokens.push_back({keyword, Type::FunctionImplementation});
-            }
-        } else if(match[3].matched) { // numbers
-            tokens.push_back({match[3].str(), Type::Number});
-        } else if(match[4].matched) { // variables
-            if(!tokens.empty() && tokens.back().type == Type::FunctionImplementation)
-                tokens.push_back({match[4].str(), Type::FunctionName});
-            else
-                tokens.push_back({match[4].str(), Type::Variable});
-        } else if(match[5].matched) { // operators
-            std::string buffer = match[5].str();
-            if(buffer == "=")
-                tokens.push_back({buffer, Type::Assigment});
-            else if(buffer == "{")
-                tokens.push_back({buffer, Type::BlockStart});
-            else if(buffer == "}")
-                tokens.push_back({buffer, Type::BlockEnd});
-            else if(buffer == ";")
-                tokens.push_back({buffer, Type::Endl});
-            else
-                tokens.push_back({buffer, Type::Operator});
-        }
-    }
-    return tokens;
-}
 
 Token Parser::peek() { return mTokens[mPos]; }
 
@@ -94,13 +29,13 @@ ASTNode *Parser::parseExpression(int minPrec)
 {
     auto left = parsePrimary();
     while(mPos < mTokens.size() &&
-           peek().type != Type::Endl &&
-           peek().type != Type::BlockStart &&
-           peek().type != Type::BlockEnd &&
-           peek().type != Type::Cell &&
+           peek().type() != Token::Type::Endl &&
+           peek().type() != Token::Type::BlockStart &&
+           peek().type() != Token::Type::BlockEnd &&
+           peek().type() != Token::Type::CellAccess &&
            mTokens[mPos].precedence() >= minPrec) {
         Token operatr = consume();
-        if(operatr.value == ")" || operatr.value == "]" || operatr.type == Type::Cell) {
+        if(operatr.value() == ")" || operatr.value() == "]" || operatr.type() == Token::Type::CellAccess) {
             break;
         }
         auto node = new ASTOperatorNode(operatr);
@@ -114,9 +49,9 @@ ASTNode *Parser::parseExpression(int minPrec)
 ASTNode *Parser::parsePrimary()
 {
     Token t = consume();
-    if(t.value == "(" || t.value == "["){
+    if(t.value() == "(" || t.value() == "["){
         return parseExpression(0);
-    } else if(t.type == Type::Cell) {
+    } else if(t.type() == Token::Type::CellAccess) {
         mPos-=1;
         return nullptr;
     }
@@ -131,7 +66,7 @@ ASTBlock *Parser::lastChildAsBlock()
 size_t Parser::findFunctionByName(const std::string &name)
 {
     for(size_t i = 0; i < mTokens.size(); ++i) {
-        if(mTokens[i+1].value == name && mTokens[i].type == Type::FunctionImplementation) {
+        if(mTokens[i+1].value() == name && mTokens[i].type() == Token::Type::KeywordFunction) {
             return i;
         }
     }
@@ -151,7 +86,7 @@ void Parser::parseIfKeyword()
 
 void Parser::parseElseKeyword()
 {
-    if(lastChildAsBlock()->token.type == Type::KeywordIf){
+    if(lastChildAsBlock()->token.type() == Token::Type::KeywordIf){
         lastIfBlock = static_cast<ASTIfBlock*>(lastChildAsBlock());
 
         mainBlock = addNewBlock<ASTElseBlock>();
@@ -168,7 +103,7 @@ void Parser::parseBlockOpen()
     if(mainBlock != nullptr) {
         mainBlock = addNewBlock<ASTBlock>();
     } else {
-        mainBlock = new ASTBlock;
+        mainBlock = new ASTBlock(peek());
         blocks.push(mainBlock);
     }
     consume();
@@ -176,7 +111,7 @@ void Parser::parseBlockOpen()
 
 void Parser::parseBlockClose()
 {
-    //if(mTokens[mPos+1].type == Type::KeywordElse)
+    //if(mTokens[mPos+1].type() == Token::Type::KeywordElse)
     //  lastIfBlock = static_cast<ASTIfBlock*>(mainBlock);
     if(blocks.size() > 1)
         blocks.pop();
@@ -197,27 +132,27 @@ void Parser::parseAssigment()
 void Parser::parseMlogKeyword()
 {
     consume();
-    auto mlog = new ASTMlogNode(consume().value);
+    auto mlog = new ASTMlogNode(consume());
     mainBlock->childs.push_back(mlog);
 }
 
 ASTCellAccessNode *Parser::parseCellAccess()
 {
     ASTCellAccessNode *root = nullptr;
-    if(mPos - 2 >= 0 && mTokens.at(mPos - 1).type == Type::Assigment && mTokens.at(mPos - 2).type == Type::Variable)
+    if(mPos - 2 >= 0 && mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
     {
         delete mainBlock->childs.back();
         mainBlock->childs.pop_back();
-        root = new ASTCellAccessNode(mTokens.at(mPos).value, mTokens.at(mPos-2).value, ASTCellAccessNode::CellAccessType::Read);
+        root = new ASTCellAccessNode(mTokens.at(mPos), mTokens.at(mPos-2).value(), ASTCellAccessNode::CellAccessType::Read);
         consume();
         root->right = parsePrimary();
         mainBlock->childs.push_back(root);
         return root;
     }
     size_t assigmentPos = mPos;
-    while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].type != Type::Assigment);
-    if(mTokens.at(++assigmentPos).type == Type::Variable) {
-        root = new ASTCellAccessNode(mTokens.at(mPos).value, mTokens.at(assigmentPos).value, ASTCellAccessNode::CellAccessType::Write);
+    while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].type() != Token::Type::Assigment);
+    if(mTokens.at(++assigmentPos).type() == Token::Type::Variable) {
+        root = new ASTCellAccessNode(mTokens.at(mPos), mTokens.at(assigmentPos).value(), ASTCellAccessNode::CellAccessType::Write);
 
         consume();
         root->right = parsePrimary();
@@ -230,10 +165,10 @@ ASTCellAccessNode *Parser::parseCellAccess()
 void Parser::parseFunctionImplementation()
 {
     consume();
-    std::string functionName = consume().value;
+    auto functionName = consume();
     consume();
     consume();
-    //      std::cerr<<"\t"<<peek().value<<std::endl;throw;
+    //      std::cerr<<"\t"<<peek().value()<<std::endl;throw;
     if(mainBlock != nullptr) {
         mainBlock = addNewBlock<ASTFunctionImplementationBlock>(new ASTFunctionImplementationBlock(functionName));
     } else {
@@ -255,23 +190,23 @@ ASTNode *Parser::parse()
     }
     if(mPos >= mTokens.size() - 1) {
         return mainBlock; // main block
-    } else if(peek().type == Type::KeywordElse) {
+    } else if(peek().type() == Token::Type::KeywordElse) {
         parseElseKeyword();
-    } else if(peek().type == Type::KeywordIf) {
+    } else if(peek().type() == Token::Type::KeywordIf) {
         parseIfKeyword();
-    } else if(peek().type == Type::BlockStart) {
+    } else if(peek().type() == Token::Type::BlockStart) {
         parseBlockOpen();
-    } else if (peek().type == Type::BlockEnd && blocks.size() > 1) {
+    } else if (peek().type() == Token::Type::BlockEnd && blocks.size() > 1) {
         parseBlockClose();
-    } else if(peek().type == Type::KeywordMlog) {
+    } else if(peek().type() == Token::Type::KeywordMlog) {
         parseMlogKeyword();
-    } else if (peek().type == Type::Endl) {
+    } else if (peek().type() == Token::Type::Endl) {
         consume();
-    } else if (peek().type == Type::Variable || peek().type == Type::Assigment) {
+    } else if (peek().type() == Token::Type::Variable || peek().type() == Token::Type::Assigment) {
         parseAssigment();
-    } else if (peek().type == Type::Cell) {
+    } else if (peek().type() == Token::Type::CellAccess) {
         parseCellAccess();
-    } else if(peek().type == Type::FunctionImplementation) {
+    } else if(peek().type() == Token::Type::KeywordFunction) {
         parseFunctionImplementation();
     }
     return parse();
