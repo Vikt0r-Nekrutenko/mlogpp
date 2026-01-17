@@ -18,6 +18,23 @@ std::string mlogpp::Token::info() const
     return info;
 }
 
+std::string mlogpp::Token::getOpName() const
+{
+    if(value == "+") return "op add";
+    else if(value == "-") return "op sub";
+    else if(value == "*") return "op mul";
+    else if(value == "/") return "op div";
+    else if(value == "<") return "op lessThan";
+    else if(value == ">") return "op greaterThan";
+    else if(value == "<=") return "op lessThanEq";
+    else if(value == ">=") return "op greaterThanEq";
+    else if(value == "==") return "op strictEqual";
+    else if(value == "!=") return "op notEqual";
+    else if(value == "and") return "op land";
+    else if(value == "or") return "op or";
+    return "";
+}
+
 int mlogpp::Token::precedence() const
 {
     if(value == "*" || value == "/" || value == "%")

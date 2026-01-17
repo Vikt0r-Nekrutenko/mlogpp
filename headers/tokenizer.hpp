@@ -55,6 +55,8 @@ namespace mlogpp
     
     std::string info() const;
 
+    std::string getOpName() const;
+
     int precedence() const;
     
     friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
