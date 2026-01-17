@@ -18,6 +18,23 @@ std::string mlogpp::Token::info() const
     return info;
 }
 
+int mlogpp::Token::precedence() const
+{
+    if(value == "*" || value == "/" || value == "%")
+        return 6;
+    else if(value == "+" || value == "-")
+        return 5;
+    else if(value == "<" || value == ">" || value == "<=" || value == ">=")
+        return 4;
+    else if(value == "==" || value == "!=")
+        return 3;
+    else if(value == "&" || value == "|")
+        return 2;
+    else if(value == "and" || value == "or")
+        return 1;
+    return 0;
+}
+
 int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)
 {
     const std::regex pattern(

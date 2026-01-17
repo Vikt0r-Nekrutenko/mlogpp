@@ -46,7 +46,7 @@ namespace mlogpp
     };
     
     Token(size_t ln, const std::string &v, Type t);
-      
+
     const size_t line_number;
     const std::string value;
     const Type type;
@@ -54,6 +54,8 @@ namespace mlogpp
     std::string getTypeName();
     
     std::string info() const;
+
+    int precedence() const;
     
     friend int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
       
