@@ -89,7 +89,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             } else if(keyword == "mlog") {
                 tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
             } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
-                tokens.push_back({lineNumber, keyword, Token::Type::Cell});
+                tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
             }
             seh.checkError(tokens);
         } else if(match[3].matched) { // numbers

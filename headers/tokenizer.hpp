@@ -26,7 +26,7 @@ namespace mlogpp
       Endl, 
       KeywordIf,
       KeywordElse,
-      Cell
+      CellAccess
     };
     
     std::map<Type, std::string> TypeMap {
@@ -41,7 +41,7 @@ namespace mlogpp
       {Type::BlockStart, "BlockStart"},
       {Type::BlockEnd, "BlockEnd"},
       {Type::Endl, "Endl"},
-      {Type::Cell, "Cell"},
+      {Type::CellAccess, "Cell"},
     };
     
     Token(size_t ln, const std::string &v, Type t);
