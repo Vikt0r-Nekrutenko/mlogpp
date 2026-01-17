@@ -55,7 +55,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
 {
     const std::regex pattern(
         R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-        R"((and|or|if|else|mlog|cell\d+)|)" // keywords
+        R"((and|or|if|else|mlog|cell\d+|function)|)" // keywords
         R"((-?\d+\.\d+|-?\d+)|)" // numbers
         R"(([a-zA-Z_][\w]*)|)" // variables
         R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
@@ -68,18 +68,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokenizeStrings(match, lineNumber, tokens, line, seh);
         } else if(match[2].matched) { // keywords
             std::string keyword = match[2].str();
-            if(keyword == "and" || keyword == "or") {
-                tokens.push_back({lineNumber, keyword, Token::Type::Operator});
-            } else if(keyword == "if") {
-                tokens.push_back({lineNumber, keyword, Token::Type::KeywordIf});
-            } else if(keyword == "else") {
-                tokens.push_back({lineNumber, keyword, Token::Type::KeywordElse});
-            } else if(keyword == "mlog") {
-                tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
-            } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
-                tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
-            }
-            seh.checkError(tokens);
+            tokenizeKeywords(lineNumber, tokens, keyword, seh);
         } else if(match[3].matched) { // numbers
             tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
             seh.checkError(tokens);
@@ -119,5 +108,22 @@ int mlogpp::tokenizeStrings(const std::smatch &match, size_t lineNumber, std::ve
         string.clear();
         seh.checkError(tokens);
     }
+    return 0;
+}
+
+int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, const std::string keyword, SyntaxErrorHandler &seh)
+{
+    if(keyword == "and" || keyword == "or") {
+        tokens.push_back({lineNumber, keyword, Token::Type::Operator});
+    } else if(keyword == "if") {
+        tokens.push_back({lineNumber, keyword, Token::Type::KeywordIf});
+    } else if(keyword == "else") {
+        tokens.push_back({lineNumber, keyword, Token::Type::KeywordElse});
+    } else if(keyword == "mlog") {
+        tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
+    } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
+        tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
+    }
+    seh.checkError(tokens);
     return 0;
 }

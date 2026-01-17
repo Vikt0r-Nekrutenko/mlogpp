@@ -27,6 +27,7 @@ class Token
         KeywordIf,
         KeywordElse,
         CellAccess,
+        FunctionKeyword
     };
 
     std::map<Type, std::string> TypeMap {
@@ -42,6 +43,7 @@ class Token
         {Type::BlockEnd, "BlockEnd"},
         {Type::Endl, "Endl"},
         {Type::CellAccess, "CellAccess"},
+        {Type::FunctionKeyword, "FunctionKeyword"},
     };
 
     Token(size_t ln, const std::string &v, Type t);
@@ -74,6 +76,7 @@ class Token
 
 int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
 int tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
+int tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, const std::string keyword, SyntaxErrorHandler &seh);
 }
 
 #endif // TOKENIZER_HPP
