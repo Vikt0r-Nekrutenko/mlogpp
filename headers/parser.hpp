@@ -1,7 +1,6 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include <regex>
 #include "ast_node.hpp"
 
 using namespace mlogpp;
@@ -11,9 +10,9 @@ std::vector<Token> tokenize(const std::string &expression);
 class Parser
 {
     std::vector<Token> mTokens;
-    std::stack<ASTBlock *> blocks;
+    std::stack<ASTNode *> blocks;
     ASTIfBlock *lastIfBlock = nullptr;
-    ASTBlock *mainBlock = nullptr;
+    ASTNode *mainBlock = nullptr;
     size_t mPos = 0;
     size_t mIfLblN = 0;
 
@@ -25,12 +24,12 @@ class Parser
 
     ASTNode *parsePrimary();
 
-    ASTBlock *lastChildAsBlock();
+    ASTNode *lastChildAsBlock();
 
     size_t findFunctionByName(const std::string &name);
 
     template <class BlockType>
-    ASTBlock *addNewBlock()
+    ASTNode *addNewBlock()
     {
         mainBlock->childs.push_back(new BlockType(peek()));
         blocks.push(lastChildAsBlock());
@@ -38,7 +37,7 @@ class Parser
     }
 
     template <class BlockType>
-    ASTBlock *addNewBlock(BlockType *block)
+    ASTNode *addNewBlock(BlockType *block)
     {
         mainBlock->childs.push_back(block);
         blocks.push(lastChildAsBlock());

@@ -1,26 +1,5 @@
 #include "parser.hpp"
 
-std::string string;
-/*
-std::vector<Token> tokens;
-std::ifstream file(argv[1]);
-
-while(!file.eof()) {
-    std::string txt;
-    std::getline(file, txt, '\n');
-    auto tmptokens = tokenize(txt);
-    tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
-}
-for(const auto &token : tokens) {
-    std::cout << token.value() << ": " << token.type()Name() << std::endl;
-}
-auto ast = Parser(tokens).parse();
-//std::ofstream mlogFile(argv[2]);
-std::cout << "________Mlog code:________" << std::endl;
-//ast->outMlogCode(mlogFile);
-ast->outMlogCode(std::cout);
-*/
-
 Token Parser::peek() { return mTokens[mPos]; }
 
 Token Parser::consume() { return mTokens[mPos++]; }
@@ -58,9 +37,9 @@ ASTNode *Parser::parsePrimary()
     return new ASTNode(t);
 }
 
-ASTBlock *Parser::lastChildAsBlock()
+ASTNode *Parser::lastChildAsBlock()
 {
-    return static_cast<ASTBlock*>(mainBlock->childs.back());
+    return static_cast<ASTNode*>(mainBlock->childs.back());
 }
 
 size_t Parser::findFunctionByName(const std::string &name)
@@ -101,9 +80,9 @@ void Parser::parseElseKeyword()
 void Parser::parseBlockOpen()
 {
     if(mainBlock != nullptr) {
-        mainBlock = addNewBlock<ASTBlock>();
+        mainBlock = addNewBlock<ASTNode>();
     } else {
-        mainBlock = new ASTBlock(peek());
+        mainBlock = new ASTNode(peek());
         blocks.push(mainBlock);
     }
     consume();

@@ -31,6 +31,9 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << "set " << left->token.value() << " " << value << std::endl;
         return left->token.value();
     }
+    for(auto ch : childs) {
+        ch->outMlogCode(stream);
+    }
     return "";
 }
 
@@ -46,19 +49,8 @@ std::string ASTOperatorNode::outMlogCode(std::ostream &stream)
     return resultVariable;
 }
 
-ASTBlock::ASTBlock(const Token &t)
-    : ASTNode(t) {}
-
-std::string ASTBlock::outMlogCode(std::ostream &stream)
-{
-    for(auto ch : childs) {
-        ch->outMlogCode(stream);
-    }
-    return "";
-}
-
 ASTIfBlock::ASTIfBlock(const Token &t)
-    : ASTBlock(t)
+    : ASTNode(t)
 {
     token.type() = Token::Type::KeywordIf;
     token.value() = "if";
@@ -70,23 +62,23 @@ std::string ASTIfBlock::outMlogCode(std::ostream &stream)
         std::string leftValue = leftNodeOutMlogCode(stream);
         stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
 
-        ASTBlock::outMlogCode(stream);
+        ASTNode::outMlogCode(stream);
         stream << label1 << ":" << std::endl;
     }
     return "";
 }
 
 ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const Token &t)
-    : ASTBlock(t) {}
+    : ASTNode(t) {}
 
 ASTElseBlock::ASTElseBlock(const Token &t)
-    : ASTBlock(t) {}
+    : ASTNode(t) {}
 
 std::string ASTElseBlock::outMlogCode(std::ostream &stream)
 {
     if(token.type() == Token::Type::KeywordElse) {
         stream << label << ":" << std::endl;
-        ASTBlock::outMlogCode(stream);
+        ASTNode::outMlogCode(stream);
         stream << label1 << ":" << std::endl;
     }
     return "";

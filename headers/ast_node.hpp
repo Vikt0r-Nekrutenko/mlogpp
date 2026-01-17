@@ -7,6 +7,7 @@
 
 struct ASTNode
 {
+    std::vector<ASTNode*> childs;
     mlogpp::Token token;
     ASTNode *left = nullptr;
     ASTNode *right = nullptr;
@@ -28,15 +29,7 @@ struct ASTOperatorNode : public ASTNode
     std::string outMlogCode(std::ostream &stream) override;
 };
 
-struct ASTBlock : public ASTNode
-{
-    ASTBlock(const mlogpp::Token &t);
-    std::vector<ASTNode*> childs;
-
-    std::string outMlogCode(std::ostream &stream) override;
-};
-
-struct ASTIfBlock : public ASTBlock
+struct ASTIfBlock : public ASTNode
 {
     ASTIfBlock(const mlogpp::Token &t);
     std::string label, label1;
@@ -44,12 +37,12 @@ struct ASTIfBlock : public ASTBlock
     std::string outMlogCode(std::ostream &stream) override;
 };
 
-struct ASTFunctionImplementationBlock : public ASTBlock
+struct ASTFunctionImplementationBlock : public ASTNode
 {
     ASTFunctionImplementationBlock(const mlogpp::Token &t);
 };
 
-struct ASTElseBlock : public ASTBlock
+struct ASTElseBlock : public ASTNode
 {
     ASTElseBlock(const mlogpp::Token &t);
     std::string label, label1;
