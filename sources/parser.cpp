@@ -1,6 +1,25 @@
 #include "parser.hpp"
 
 std::string string;
+/*
+std::vector<Token> tokens;
+std::ifstream file(argv[1]);
+
+while(!file.eof()) {
+    std::string txt;
+    std::getline(file, txt, '\n');
+    auto tmptokens = tokenize(txt);
+    tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
+}
+for(const auto &token : tokens) {
+    std::cout << token.value << ": " << token.typeName() << std::endl;
+}
+auto ast = Parser(tokens).parse();
+//std::ofstream mlogFile(argv[2]);
+std::cout << "________Mlog code:________" << std::endl;
+//ast->outMlogCode(mlogFile);
+ast->outMlogCode(std::cout);
+*/
 
 std::vector<Token> tokenize(const std::string &expression)
 {
