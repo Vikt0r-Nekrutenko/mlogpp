@@ -50,21 +50,15 @@ std::string ASTOperatorNode::outMlogCode(std::ostream &stream)
 }
 
 ASTIfBlock::ASTIfBlock(const Token &t)
-    : ASTNode(t)
-{
-    token.type() = Token::Type::KeywordIf;
-    token.value() = "if";
-}
+    : ASTNode(t) {}
 
 std::string ASTIfBlock::outMlogCode(std::ostream &stream)
 {
-    if(token.type() == Token::Token::Type::KeywordIf) {
-        std::string leftValue = leftNodeOutMlogCode(stream);
-        stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
+    std::string leftValue = leftNodeOutMlogCode(stream);
+    stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
 
-        ASTNode::outMlogCode(stream);
-        stream << label1 << ":" << std::endl;
-    }
+    ASTNode::outMlogCode(stream);
+    stream << label1 << ":" << std::endl;
     return "";
 }
 
@@ -76,11 +70,9 @@ ASTElseBlock::ASTElseBlock(const Token &t)
 
 std::string ASTElseBlock::outMlogCode(std::ostream &stream)
 {
-    if(token.type() == Token::Type::KeywordElse) {
-        stream << label << ":" << std::endl;
-        ASTNode::outMlogCode(stream);
-        stream << label1 << ":" << std::endl;
-    }
+    stream << label << ":" << std::endl;
+    ASTNode::outMlogCode(stream);
+    stream << label1 << ":" << std::endl;
     return "";
 }
 
