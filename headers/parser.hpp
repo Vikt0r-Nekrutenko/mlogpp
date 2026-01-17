@@ -24,15 +24,19 @@ class Parser
 
     ASTNode *parsePrimary();
 
-    ASTNode *lastChildAsBlock();
-
     size_t findFunctionByName(const std::string &name);
+
+    template <class BlockType>
+    BlockType lastChildAsBlock()
+    {
+        return static_cast<BlockType>(mainBlock->childs.back());
+    }
 
     template <class BlockType>
     ASTNode *addNewBlock()
     {
         mainBlock->childs.push_back(new BlockType(peek()));
-        blocks.push(lastChildAsBlock());
+        blocks.push(lastChildAsBlock<BlockType *>());
         return blocks.top();
     }
 
@@ -40,7 +44,7 @@ class Parser
     ASTNode *addNewBlock(BlockType *block)
     {
         mainBlock->childs.push_back(block);
-        blocks.push(lastChildAsBlock());
+        blocks.push(lastChildAsBlock<BlockType *>());
         return blocks.top();
     }
 

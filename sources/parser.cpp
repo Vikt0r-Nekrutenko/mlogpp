@@ -37,11 +37,6 @@ ASTNode *Parser::parsePrimary()
     return new ASTNode(t);
 }
 
-ASTNode *Parser::lastChildAsBlock()
-{
-    return static_cast<ASTNode*>(mainBlock->childs.back());
-}
-
 size_t Parser::findFunctionByName(const std::string &name)
 {
     for(size_t i = 0; i < mTokens.size(); ++i) {
@@ -60,19 +55,20 @@ void Parser::parseIfKeyword()
     mainBlock->left = parseExpression(0);
     consume();
 
-    static_cast<ASTIfBlock*>(mainBlock)->label = static_cast<ASTIfBlock*>(mainBlock)->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
+    auto lastBlockAsIf = static_cast<ASTIfBlock *>(mainBlock);
+    lastBlockAsIf->label = lastBlockAsIf->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
 }
 
 void Parser::parseElseKeyword()
 {
-    if(lastChildAsBlock()->token.type() == Token::Type::KeywordIf){
-        lastIfBlock = static_cast<ASTIfBlock*>(lastChildAsBlock());
+    if(lastChildAsBlock<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
+        lastIfBlock = lastChildAsBlock<ASTIfBlock *>();
 
         mainBlock = addNewBlock<ASTElseBlock>();
 
-        static_cast<ASTElseBlock*>(mainBlock)->label1 = lastIfBlock->label;
+        static_cast<ASTElseBlock *>(mainBlock)->label1 = lastIfBlock->label;
         lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
-        static_cast<ASTElseBlock*>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
+        static_cast<ASTElseBlock *>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
     }
     consume();
 }
@@ -149,7 +145,8 @@ void Parser::parseFunctionImplementation()
     consume();
     //      std::cerr<<"\t"<<peek().value()<<std::endl;throw;
     if(mainBlock != nullptr) {
-        mainBlock = addNewBlock<ASTFunctionImplementationBlock>(new ASTFunctionImplementationBlock(functionName));
+        auto newBlock = new ASTFunctionImplementationBlock(functionName);
+        mainBlock = addNewBlock<ASTFunctionImplementationBlock>(newBlock);
     } else {
         mainBlock = new ASTFunctionImplementationBlock(functionName);
         blocks.push(mainBlock);
