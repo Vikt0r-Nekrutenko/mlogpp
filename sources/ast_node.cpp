@@ -1,6 +1,8 @@
 #include "ast_node.hpp"
 #include <iostream>
 
+size_t ASTNode::tempVariableN = 0;
+
 ASTNode::ASTNode(const Token &t) : token{t} {}
 
 std::string ASTNode::leftNodeOutMlogCode(std::ostream &stream)

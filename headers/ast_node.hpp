@@ -85,8 +85,6 @@ struct ASTNode
     virtual std::string outMlogCode(std::ostream &stream);
 };
 
-size_t ASTNode::tempVariableN = 0;
-
 struct ASTOperatorNode : public ASTNode
 {
     ASTOperatorNode(const Token &t);
