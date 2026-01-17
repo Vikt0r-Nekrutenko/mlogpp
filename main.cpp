@@ -9,74 +9,7 @@
 #include <regex>
 #include <fstream>
 
-#include "syntax_error_handler.hpp"
-#include "tokenizer.hpp"
-
-enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell, FunctionImplementation, FunctionName, FunctionCall};
-
-struct Token
-{
-    std::string value;
-    Type type;
-    
-    int precedence() const 
-    { 
-        if(value == "*" || value == "/" || value == "%")
-            return 6;
-        else if(value == "+" || value == "-")
-            return 5;
-        else if(value == "<" || value == ">" || value == "<=" || value == ">=")
-            return 4;
-        else if(value == "==" || value == "!=")
-            return 3;
-        else if(value == "&" || value == "|")
-            return 2;
-        else if(value == "and" || value == "or")
-            return 1;
-        return 0;
-    } 
-    
-    std::string typeName() const
-    {
-      switch(type) {
-        case Type::Variable: return "Variable";
-        case Type::Number: return "Number";
-        case Type::Assigment: return "Assigment";
-        case Type::Operator: return "Operator";
-        case Type::BlockStart: return "BlockStart";
-        case Type::BlockEnd: return "BlockEnd";
-        case Type::Endl: return "EndLine";
-        case Type::KeywordIf: return "KeywordIf";
-        case Type::KeywordElse: return "KeywordElse";
-        case Type::KeywordMlog: return "KeywordMlog";
-        case Type::MultyString: return "MultyString";
-        case Type::Cell: return "Cell";
-        case Type::FunctionImplementation: return "FunctionImplementation";
-        case Type::FunctionName: return "FunctionName";
-        case Type::FunctionCall: return "FunctionCall";
-        default: return "None";
-      }
-    }
-    
-    std::string getOpName() const
-    {
-             if(value == "+") return "op add";
-        else if(value == "-") return "op sub";
-        else if(value == "*") return "op mul";
-        else if(value == "/") return "op div";
-        else if(value == "<") return "op lessThan";
-        else if(value == ">") return "op greaterThan";
-        else if(value == "<=") return "op lessThanEq";
-        else if(value == ">=") return "op greaterThanEq";
-        else if(value == "==") return "op strictEqual";
-        else if(value == "!=") return "op notEqual";
-        else if(value == "and") return "op land";
-        else if(value == "or") return "op or";
-        return "";
-    }
-};
-
-
+#include "ast_node.hpp"
 
 std::string string;
 
@@ -384,24 +317,24 @@ int main(int argc, char **argv)
   // //ast->outMlogCode(mlogFile);
   // ast->outMlogCode(std::cout);
   
-  mlogpp::SyntaxErrorHandler seh;
-  std::vector<mlogpp::Token> tokens;
-  std::ifstream file(argv[1]);
-  size_t lineNumber = 1;
+  // mlogpp::SyntaxErrorHandler seh;
+  // std::vector<mlogpp::Token> tokens;
+  // std::ifstream file(argv[1]);
+  // size_t lineNumber = 1;
     
-  try {
-    while(!file.eof()) {
-      std::string line;
-      std::getline(file, line, '\n');
-      mlogpp::tokenize(lineNumber++, tokens, line, seh);
-    }
-    seh.checkError(tokens, true);
-    for(const auto &token : tokens) {
-      std::cout << token.info() << std::endl;
-    }
-  } catch(const std::string &ex) {
-    std::cerr << "\t" << ex << std::endl;
-  }
+  // try {
+  //   while(!file.eof()) {
+  //     std::string line;
+  //     std::getline(file, line, '\n');
+  //     mlogpp::tokenize(lineNumber++, tokens, line, seh);
+  //   }
+  //   seh.checkError(tokens, true);
+  //   for(const auto &token : tokens) {
+  //     std::cout << token.info() << std::endl;
+  //   }
+  // } catch(const std::string &ex) {
+  //   std::cerr << "\t" << ex << std::endl;
+  // }
   return 0;
 }
 

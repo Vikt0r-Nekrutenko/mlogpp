@@ -4,7 +4,70 @@
 #include <string>
 #include <vector>
 
-struct Token;
+enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell, FunctionImplementation, FunctionName, FunctionCall};
+
+struct Token
+{
+    std::string value;
+    Type type;
+
+    int precedence() const
+    {
+        if(value == "*" || value == "/" || value == "%")
+            return 6;
+        else if(value == "+" || value == "-")
+            return 5;
+        else if(value == "<" || value == ">" || value == "<=" || value == ">=")
+            return 4;
+        else if(value == "==" || value == "!=")
+            return 3;
+        else if(value == "&" || value == "|")
+            return 2;
+        else if(value == "and" || value == "or")
+            return 1;
+        return 0;
+    }
+
+    std::string typeName() const
+    {
+        switch(type) {
+        case Type::Variable: return "Variable";
+        case Type::Number: return "Number";
+        case Type::Assigment: return "Assigment";
+        case Type::Operator: return "Operator";
+        case Type::BlockStart: return "BlockStart";
+        case Type::BlockEnd: return "BlockEnd";
+        case Type::Endl: return "EndLine";
+        case Type::KeywordIf: return "KeywordIf";
+        case Type::KeywordElse: return "KeywordElse";
+        case Type::KeywordMlog: return "KeywordMlog";
+        case Type::MultyString: return "MultyString";
+        case Type::Cell: return "Cell";
+        case Type::FunctionImplementation: return "FunctionImplementation";
+        case Type::FunctionName: return "FunctionName";
+        case Type::FunctionCall: return "FunctionCall";
+        default: return "None";
+        }
+    }
+
+    std::string getOpName() const
+    {
+        if(value == "+") return "op add";
+        else if(value == "-") return "op sub";
+        else if(value == "*") return "op mul";
+        else if(value == "/") return "op div";
+        else if(value == "<") return "op lessThan";
+        else if(value == ">") return "op greaterThan";
+        else if(value == "<=") return "op lessThanEq";
+        else if(value == ">=") return "op greaterThanEq";
+        else if(value == "==") return "op strictEqual";
+        else if(value == "!=") return "op notEqual";
+        else if(value == "and") return "op land";
+        else if(value == "or") return "op or";
+        return "";
+    }
+};
+
 
 struct ASTNode
 {

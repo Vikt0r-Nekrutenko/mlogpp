@@ -1,4 +1,5 @@
 #include "ast_node.hpp"
+#include <iostream>
 
 ASTNode::ASTNode(const Token &t) : token{t} {}
 
