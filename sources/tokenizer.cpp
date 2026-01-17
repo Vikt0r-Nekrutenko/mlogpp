@@ -1,9 +1,8 @@
 #include "tokenizer.hpp"
 #include "syntax_error_handler.hpp"
-#include <regex>
 
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
-    : line_number(ln), value(v), type(t), mValue{v}, mLineNumber{ln}, mType{t} {}
+    : mValue{v}, mLineNumber{ln}, mType{t} {}
 
 std::string mlogpp::Token::getTypeName()
 {
@@ -20,34 +19,34 @@ std::string mlogpp::Token::info() const
 
 std::string mlogpp::Token::getOpName() const
 {
-    if(value == "+") return "op add";
-    else if(value == "-") return "op sub";
-    else if(value == "*") return "op mul";
-    else if(value == "/") return "op div";
-    else if(value == "<") return "op lessThan";
-    else if(value == ">") return "op greaterThan";
-    else if(value == "<=") return "op lessThanEq";
-    else if(value == ">=") return "op greaterThanEq";
-    else if(value == "==") return "op strictEqual";
-    else if(value == "!=") return "op notEqual";
-    else if(value == "and") return "op land";
-    else if(value == "or") return "op or";
+         if(value() == "+") return "op add";
+    else if(value() == "-") return "op sub";
+    else if(value() == "*") return "op mul";
+    else if(value() == "/") return "op div";
+    else if(value() == "<") return "op lessThan";
+    else if(value() == ">") return "op greaterThan";
+    else if(value() == "<=") return "op lessThanEq";
+    else if(value() == ">=") return "op greaterThanEq";
+    else if(value() == "==") return "op strictEqual";
+    else if(value() == "!=") return "op notEqual";
+    else if(value() == "and") return "op land";
+    else if(value() == "or") return "op or";
     return "";
 }
 
 int mlogpp::Token::precedence() const
 {
-    if(value == "*" || value == "/" || value == "%")
+    if(value() == "*" || value() == "/" || value() == "%")
         return 6;
-    else if(value == "+" || value == "-")
+    else if(value() == "+" || value() == "-")
         return 5;
-    else if(value == "<" || value == ">" || value == "<=" || value == ">=")
+    else if(value() == "<" || value() == ">" || value() == "<=" || value() == ">=")
         return 4;
-    else if(value == "==" || value == "!=")
+    else if(value() == "==" || value() == "!=")
         return 3;
-    else if(value == "&" || value == "|")
+    else if(value() == "&" || value() == "|")
         return 2;
-    else if(value == "and" || value == "or")
+    else if(value() == "and" || value() == "or")
         return 1;
     return 0;
 }
@@ -66,18 +65,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
     for(auto i = wordsBegin; i != wordEnd; ++i) {
         std::smatch match = *i;
         if(match[1].matched) { // strings
-            static std::string string;
-            std::string subStr = match[1].str();
-            for(auto it = subStr.begin()+1; it != subStr.end()-1; ++it)
-                if(*it != '\\')
-                    string += *it;
-            string += '\n';
-            if(line.back() == ';') {
-                string.pop_back(); // remove last '\n'
-                tokens.push_back({lineNumber, string, Token::Type::String});
-                string.clear();
-                seh.checkError(tokens);
-            }
+            tokenizeStrings(match, lineNumber, tokens, line, seh);
         } else if(match[2].matched) { // keywords
             std::string keyword = match[2].str();
             if(keyword == "and" || keyword == "or") {
@@ -113,6 +101,23 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             }
             seh.checkError(tokens);
         }
+    }
+    return 0;
+}
+
+int mlogpp::tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)
+{
+    static std::string string;
+    std::string subStr = match[1].str();
+    for(auto it = subStr.begin()+1; it != subStr.end()-1; ++it)
+        if(*it != '\\')
+            string += *it;
+    string += '\n';
+    if(line.back() == ';') {
+        string.pop_back(); // remove last '\n'
+        tokens.push_back({lineNumber, string, Token::Type::String});
+        string.clear();
+        seh.checkError(tokens);
     }
     return 0;
 }
