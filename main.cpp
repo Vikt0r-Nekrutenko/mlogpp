@@ -6,30 +6,37 @@
 #include <iostream>
 #include <fstream>
 
+void readFile(std::ifstream &sourceFile, std::ostream &resultFile) {
+    mlogpp::SyntaxErrorHandler seh;
+    std::vector<mlogpp::Token> tokens;
+    size_t lineNumber = 1;
+
+    try {
+        while(!sourceFile.eof()) {
+            std::string line;
+            std::getline(sourceFile, line, '\n');
+            mlogpp::tokenize(lineNumber++, tokens, line, seh);
+        }
+        seh.checkError(tokens, true);
+
+        for(const auto &token : tokens) {
+            std::cout << token.info() << std::endl;
+        }
+    } catch(const std::string &ex) {
+        std::cerr << "\t" << ex << std::endl;
+    } catch(const char *ex) {
+        std::cerr << "\t" << ex << std::endl;
+    }
+}
+
 int main(int argc, char **argv)
 {
-  mlogpp::SyntaxErrorHandler seh;
-  std::vector<mlogpp::Token> tokens;
-  std::ifstream file(argv[1]);
-  size_t lineNumber = 1;
-    
-  try {
-    while(!file.eof()) {
-      std::string line;
-      std::getline(file, line, '\n');
-      mlogpp::tokenize(lineNumber++, tokens, line, seh);
-      seh.checkError(tokens, true);
-    }
-    for(const auto &token : tokens) {
-      std::cout << token.info() << std::endl;
-    }
-  } catch(const std::string &ex) {
-    std::cerr << "\t" << ex << std::endl;
-  } catch(const char *ex) {
-      std::cerr << "\t" << ex << std::endl;
-  }
+    std::ifstream sourceFile(argv[1]);
+    std::ofstream outFile(argc > 2 ? argv[2] : "");
+    std::ostream *resultFile = (argc > 2) ? &outFile : &std::cout;
 
-  return 0;
+    readFile(sourceFile, *resultFile);
+    return 0;
 }
 
 /*
