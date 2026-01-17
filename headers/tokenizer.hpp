@@ -2,9 +2,8 @@
 #define TOKENIZER_HPP
 
 #include <string>
-#include <regex>
 #include <map>
-#include <iostream>
+#include <vector>
 
 namespace mlogpp
 {

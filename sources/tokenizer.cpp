@@ -1,6 +1,6 @@
 #include "tokenizer.hpp"
 #include "syntax_error_handler.hpp"
-
+#include <regex>
 
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
     : line_number(ln), value(v), type(t), mValue{v}, mLineNumber{ln}, mType{t} {}
