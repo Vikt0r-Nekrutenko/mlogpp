@@ -9,6 +9,7 @@
 #include <regex>
 #include <fstream>
 
+#include "syntax_error_handler.hpp"
 #include "tokenizer.hpp"
 
 enum class Type {Variable, Number, Operator, Assigment, KeywordMlog, MultyString, BlockStart, BlockEnd, Endl, KeywordIf, KeywordElse, Cell, FunctionImplementation, FunctionName, FunctionCall};
@@ -511,25 +512,25 @@ public:
 
 int main(int argc, char **argv)
 {
-  std::vector<Token> tokens;
-  std::ifstream file(argv[1]);
+  // std::vector<Token> tokens;
+  // std::ifstream file(argv[1]);
     
-  while(!file.eof()) {
-    std::string txt;
-    std::getline(file, txt, '\n');
-    auto tmptokens = tokenize(txt);
-    tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
-  }
-    for(const auto &token : tokens) {
-        std::cout << token.value << ": " << token.typeName() << std::endl;
-    }
-  auto ast = Parser(tokens).parse();
-  //std::ofstream mlogFile(argv[2]);
-  std::cout << "________Mlog code:________" << std::endl;
-  //ast->outMlogCode(mlogFile);
-  ast->outMlogCode(std::cout);
+  // while(!file.eof()) {
+  //   std::string txt;
+  //   std::getline(file, txt, '\n');
+  //   auto tmptokens = tokenize(txt);
+  //   tokens.insert(tokens.end(), tmptokens.begin(), tmptokens.end());
+  // }
+  //   for(const auto &token : tokens) {
+  //       std::cout << token.value << ": " << token.typeName() << std::endl;
+  //   }
+  // auto ast = Parser(tokens).parse();
+  // //std::ofstream mlogFile(argv[2]);
+  // std::cout << "________Mlog code:________" << std::endl;
+  // //ast->outMlogCode(mlogFile);
+  // ast->outMlogCode(std::cout);
   
-  /*mlogpp::SyntaxErrorHandler seh;
+  mlogpp::SyntaxErrorHandler seh;
   std::vector<mlogpp::Token> tokens;
   std::ifstream file(argv[1]);
   size_t lineNumber = 1;
@@ -546,7 +547,7 @@ int main(int argc, char **argv)
     }
   } catch(const std::string &ex) {
     std::cerr << "\t" << ex << std::endl;
-  }*/
+  }
   return 0;
 }
 

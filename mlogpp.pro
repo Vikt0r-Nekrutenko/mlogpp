@@ -4,10 +4,18 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 INCLUDEPATH += \
-        headers/
+        headers/ \
+        sources/ \
+
+DEPENDPATH += \
+        headers/ \
+        sources/ \
 
 HEADERS += \
-        tokenizer.hpp
+        headers/syntax_error_handler.hpp \
+        headers/tokenizer.hpp \
         
 SOURCES += \
-        *.cpp
+        sources/syntax_error_handler.cpp \
+        main.cpp \
+    sources/tokenizer.cpp
