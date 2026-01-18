@@ -15,6 +15,8 @@ struct ASTNode
 
     ASTNode(const mlogpp::Token &t);
 
+    virtual ~ASTNode();
+
     std::string leftNodeOutMlogCode(std::ostream &stream);
 
     std::string rightNodeOutMlogCode(std::ostream &stream);

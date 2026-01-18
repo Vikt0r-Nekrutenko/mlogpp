@@ -5,8 +5,6 @@
 
 using namespace mlogpp;
 
-std::vector<Token> tokenize(const std::string &expression);
-
 class Parser
 {
     std::vector<Token> mTokens;
@@ -15,8 +13,6 @@ class Parser
     ASTNode *mainBlock = nullptr;
     size_t mPos = 0;
     size_t mIfLblN = 0;
-
-    inline ASTNode *lastChild() { return mainBlock->childs.back(); }
 
     template <class BlockType> inline BlockType lastChildAsT() { return static_cast<BlockType>(mainBlock->childs.back()); }
 

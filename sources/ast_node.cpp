@@ -6,6 +6,14 @@ size_t ASTNode::tempVariableN = 0;
 
 ASTNode::ASTNode(const Token &t) : token(Token(t.lineNumber(), t.value(), t.type())) {}
 
+ASTNode::~ASTNode()
+{
+    delete left;
+    delete right;
+    for(size_t i = 0; i < childs.size(); ++i)
+        delete childs[i];
+}
+
 std::string ASTNode::leftNodeOutMlogCode(std::ostream &stream)
 {
     if(left == nullptr)

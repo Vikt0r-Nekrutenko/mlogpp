@@ -121,7 +121,7 @@ void Parser::parseMlogKeyword()
 ASTCellAccessNode *Parser::parseCellAccess()
 {
     ASTCellAccessNode *root = nullptr;
-    if(mPos - 2 >= 0 && mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
+    if(mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
     {
         delete mainBlock->childs.back();
         mainBlock->childs.pop_back();
