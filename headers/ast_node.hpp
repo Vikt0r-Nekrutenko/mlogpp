@@ -59,10 +59,9 @@ struct ASTCellAccessNode : public ASTNode
     typedef enum _CellAccessType {
         Read, Write,
     } CellAccessType;
-    std::string argumentValue;
     CellAccessType accessType;
 
-    ASTCellAccessNode(const mlogpp::Token &t, const std::string &av, CellAccessType cat);
+    ASTCellAccessNode(const mlogpp::Token &t, CellAccessType cat);
 
     std::string outMlogCode(std::ostream &stream) override;
 };

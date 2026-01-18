@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include <iostream>
 
 Token Parser::peek() { return mTokens[mPos]; }
 
@@ -123,10 +124,13 @@ ASTCellAccessNode *Parser::parseCellAccess()
     ASTCellAccessNode *root = nullptr;
     if(mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
     {
-        delete mainBlock->childs.back();
-        mainBlock->childs.pop_back();
-        root = new ASTCellAccessNode(mTokens.at(mPos), mTokens.at(mPos-2).value(), ASTCellAccessNode::CellAccessType::Read);
+        auto argumentNode = new ASTNode(*mainBlock->childs.back()->left); // [x] = cell1[0]
+        delete mainBlock->childs.back(); // x [=] cell1[0]
+        mainBlock->childs.pop_back(); // x [=] cell1[0]
+
+        root = new ASTCellAccessNode(mTokens.at(mPos), ASTCellAccessNode::CellAccessType::Read);
         consume();
+        root->left = argumentNode;
         root->right = parsePrimary();
         mainBlock->childs.push_back(root);
         return root;
@@ -134,15 +138,19 @@ ASTCellAccessNode *Parser::parseCellAccess()
     size_t assigmentPos = mPos;
     while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].type() != Token::Type::Assigment);
     if(mTokens.at(++assigmentPos).type() == Token::Type::Variable) {
-        root = new ASTCellAccessNode(mTokens.at(mPos), mTokens.at(assigmentPos).value(), ASTCellAccessNode::CellAccessType::Write);
+        auto argumentNode = new ASTNode(mTokens.at(assigmentPos)); // [x] = cell1[0]
+        root = new ASTCellAccessNode(mTokens.at(mPos), ASTCellAccessNode::CellAccessType::Write);
 
         consume();
+        root->left = argumentNode;
         root->right = parsePrimary();
         mainBlock->childs.push_back(root);
-        mPos = assigmentPos + 1;
+        mPos = assigmentPos + 1; // x = cell1[0][;]
     }
     return root;
 }
+
+                         // std::cerr<<"\t"<<peek().info()<<std::endl;throw;
 
 void Parser::parseFunctionImplementation()
 {
@@ -150,7 +158,6 @@ void Parser::parseFunctionImplementation()
     auto functionName = consume();
     consume();
     consume();
-    //      std::cerr<<"\t"<<peek().value()<<std::endl;throw;
     if(mainBlock != nullptr) {
         auto newBlock = new ASTFunctionImplementationBlock(functionName);
         mainBlock = addBlock(newBlock);

@@ -50,11 +50,12 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
 
 void ASTNode::printTree(size_t depth) const
 {
-    std::cout << "[" << token.value() << "]";
     if(left != nullptr) {
-        std::cout << " -> ";
         left->printTree(depth);
     }
+
+    std::cout << (left != nullptr ? " -> " : "") << "[" << token.value() << "]";
+
     if(right != nullptr) {
         std::cout << " <- ";
         right->printTree(depth);
@@ -111,12 +112,13 @@ std::string ASTElseBlock::outMlogCode(std::ostream &stream)
     return "";
 }
 
-ASTCellAccessNode::ASTCellAccessNode(const Token &t, const std::string &av, CellAccessType cat)
-    : ASTNode(t), argumentValue{av},  accessType{cat} {}
+ASTCellAccessNode::ASTCellAccessNode(const Token &t, CellAccessType cat)
+    : ASTNode(t), accessType{cat} {}
 
 std::string ASTCellAccessNode::outMlogCode(std::ostream &stream)
 {
+    std::string lvalue = leftNodeOutMlogCode(stream);
     std::string rvalue = rightNodeOutMlogCode(stream);
-    stream << (accessType == Read ? "read " : "write ") << argumentValue << " " << token.value() << " " << rvalue << std::endl;
+    stream << (accessType == Read ? "read " : "write ") << lvalue << " " << token.value() << " " << rvalue << std::endl;
     return "";
 }
