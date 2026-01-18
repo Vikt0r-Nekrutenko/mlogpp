@@ -30,23 +30,46 @@ std::string ASTNode::rightNodeOutMlogCode(std::ostream &stream)
 
 std::string ASTNode::outMlogCode(std::ostream &stream)
 {
-    if(token.type() == Token::Token::Type::String)
+    if(token.type() == mlogpp::Token::Type::MlogValue)
+        stream << token.value() << std::endl;
+    else if(token.type() == Token::Token::Type::String)
         return "\"" + token.value() + "\"";
-    if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable)
+    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable)
         return token.value();
-    if(token.type() == Token::Type::Assigment) {
+    else if(token.type() == Token::Type::Assigment) {
         std::string value = rightNodeOutMlogCode(stream);
         stream << "set " << left->token.value() << " " << value << std::endl;
         return left->token.value();
-    }
-    if(token.type() == mlogpp::Token::Type::MlogValue) {
-        stream << token.value() << std::endl;
     }
 
     for(auto ch : childs) {
         ch->outMlogCode(stream);
     }
     return "";
+}
+
+void ASTNode::printTree(size_t depth) const
+{
+    std::cout << "[" << token.value() << "]";
+    if(left != nullptr) {
+        std::cout << " -> ";
+        left->printTree(depth);
+    }
+    if(right != nullptr) {
+        std::cout << " <- ";
+        right->printTree(depth);
+    }
+    if(!childs.empty()){
+        ++depth;
+        std::cout << std::endl;
+        for(auto child : childs) {
+            for(auto d = depth; d > 0; --d)
+                std::cout << "...";
+            child->printTree(depth);
+            std::cout << std::endl;
+        }
+        --depth;
+    }
 }
 
 ASTOperatorNode::ASTOperatorNode(const Token &t)

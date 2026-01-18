@@ -22,6 +22,8 @@ struct ASTNode
     std::string rightNodeOutMlogCode(std::ostream &stream);
 
     virtual std::string outMlogCode(std::ostream &stream);
+
+    void printTree(size_t depth) const;
 };
 
 struct ASTOperatorNode : public ASTNode
