@@ -16,6 +16,10 @@ class Parser
     size_t mPos = 0;
     size_t mIfLblN = 0;
 
+    inline ASTNode *lastChild() { return mainBlock->childs.back(); }
+
+    template <class BlockType> inline BlockType lastChildAsT() { return static_cast<BlockType>(mainBlock->childs.back()); }
+
     Token peek();
 
     Token consume();
@@ -26,27 +30,7 @@ class Parser
 
     size_t findFunctionByName(const std::string &name);
 
-    template <class BlockType>
-    BlockType lastChildAsBlock()
-    {
-        return static_cast<BlockType>(mainBlock->childs.back());
-    }
-
-    template <class BlockType>
-    ASTNode *addNewBlock()
-    {
-        mainBlock->childs.push_back(new BlockType(peek()));
-        blocks.push(lastChildAsBlock<BlockType *>());
-        return blocks.top();
-    }
-
-    template <class BlockType>
-    ASTNode *addNewBlock(BlockType *block)
-    {
-        mainBlock->childs.push_back(block);
-        blocks.push(lastChildAsBlock<BlockType *>());
-        return blocks.top();
-    }
+    ASTNode *addBlock(ASTNode *block);
 
     void parseIfKeyword();
 

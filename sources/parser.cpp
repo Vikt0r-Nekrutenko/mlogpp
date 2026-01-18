@@ -47,9 +47,16 @@ size_t Parser::findFunctionByName(const std::string &name)
     return mPos;
 }
 
+ASTNode *Parser::addBlock(ASTNode *block)
+{
+    mainBlock->childs.push_back(block);
+    blocks.push(mainBlock->childs.back());
+    return blocks.top();
+}
+
 void Parser::parseIfKeyword()
 {
-    mainBlock = addNewBlock<ASTIfBlock>();
+    mainBlock = addBlock(new ASTIfBlock(peek()));
     consume();
 
     mainBlock->left = parseExpression(0);
@@ -61,10 +68,10 @@ void Parser::parseIfKeyword()
 
 void Parser::parseElseKeyword()
 {
-    if(lastChildAsBlock<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
-        lastIfBlock = lastChildAsBlock<ASTIfBlock *>();
+    if(lastChildAsT<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
+        lastIfBlock = lastChildAsT<ASTIfBlock *>();
 
-        mainBlock = addNewBlock<ASTElseBlock>();
+        mainBlock = addBlock(new ASTElseBlock(peek()));
 
         static_cast<ASTElseBlock *>(mainBlock)->label1 = lastIfBlock->label;
         lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
@@ -76,7 +83,7 @@ void Parser::parseElseKeyword()
 void Parser::parseBlockOpen()
 {
     if(mainBlock != nullptr) {
-        mainBlock = addNewBlock<ASTNode>();
+        mainBlock = addBlock(new ASTNode(peek()));
     } else {
         mainBlock = new ASTNode(peek());
         blocks.push(mainBlock);
@@ -146,7 +153,7 @@ void Parser::parseFunctionImplementation()
     //      std::cerr<<"\t"<<peek().value()<<std::endl;throw;
     if(mainBlock != nullptr) {
         auto newBlock = new ASTFunctionImplementationBlock(functionName);
-        mainBlock = addNewBlock<ASTFunctionImplementationBlock>(newBlock);
+        mainBlock = addBlock(newBlock);
     } else {
         mainBlock = new ASTFunctionImplementationBlock(functionName);
         blocks.push(mainBlock);
