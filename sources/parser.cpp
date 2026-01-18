@@ -154,10 +154,10 @@ ASTCellAccessNode *Parser::parseCellAccess()
 
 void Parser::parseFunctionImplementation()
 {
-    consume();
-    auto functionName = consume();
-    consume();
-    consume();
+    consume(); // pass 'function' keyword
+    auto functionName = consume(); // and pass '('
+    consume(); // pass ')'
+    consume(); // pass '{'
     if(mainBlock != nullptr) {
         auto newBlock = new ASTFunctionImplementationBlock(functionName);
         mainBlock = addBlock(newBlock);
