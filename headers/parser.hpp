@@ -1,6 +1,7 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include <stack>
 #include "ast_node.hpp"
 
 using namespace mlogpp;

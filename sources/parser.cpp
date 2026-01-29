@@ -50,8 +50,10 @@ size_t Parser::findFunctionByName(const std::string &name)
 
 ASTNode *Parser::addBlock(ASTNode *block)
 {
+    std::cout << "\tNow: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value();
     mainBlock->childs.push_back(block);
     blocks.push(mainBlock->childs.back());
+    std::cout << "] | Add: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
     return blocks.top();
 }
 
@@ -63,14 +65,14 @@ void Parser::parseIfKeyword()
     mainBlock->left = parseExpression(0);
     consume();
 
-    auto lastBlockAsIf = static_cast<ASTIfBlock *>(mainBlock);
-    lastBlockAsIf->label = lastBlockAsIf->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
+    lastIfBlock = static_cast<ASTIfBlock *>(mainBlock);
+    lastIfBlock->label = lastIfBlock->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
 }
 
 void Parser::parseElseKeyword()
 {
     if(lastChildAsT<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
-        lastIfBlock = lastChildAsT<ASTIfBlock *>();
+        //lastIfBlock = lastChildAsT<ASTIfBlock *>();
 
         mainBlock = addBlock(new ASTElseBlock(peek()));
 
@@ -78,6 +80,7 @@ void Parser::parseElseKeyword()
         lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
         static_cast<ASTElseBlock *>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
     }
+    consume();
     consume();
 }
 
@@ -96,9 +99,11 @@ void Parser::parseBlockClose()
 {
     //if(mTokens[mPos+1].type() == Token::Type::KeywordElse)
     //  lastIfBlock = static_cast<ASTIfBlock*>(mainBlock);
+    std::cout << "\tDel: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value();
     if(blocks.size() > 1)
         blocks.pop();
     mainBlock = blocks.top();
+    std::cout << "] | Now: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
     consume();
 }
 

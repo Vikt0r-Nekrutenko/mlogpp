@@ -19,12 +19,15 @@ void readFile(std::ifstream &sourceFile, std::ostream &resultFile) {
         }
         seh.checkError(tokens, true);
 
-        // for(const auto &token : tokens) {
-        //     std::cout << token.info() << std::endl;
-        // }
+        std::cout << "\n________Tokens:________" << std::endl;
+        for(const auto &token : tokens) {
+           std::cout << token.info() << std::endl;
+        }
+        std::cout << "\n________Parser info:________" << std::endl;
         auto ast = Parser(tokens).parse();
+        std::cout << "\n________Program tree:________" << std::endl;
         ast->printTree(0);
-        std::cout << "________Mlog code:________" << std::endl;
+        std::cout << "\n________Mlog code:________" << std::endl;
         ast->outMlogCode(resultFile);
     } catch(const std::string &ex) {
         std::cerr << "\t" << ex << std::endl;

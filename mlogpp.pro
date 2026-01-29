@@ -3,6 +3,8 @@ CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
+OBJECTS_DIR = objects
+
 INCLUDEPATH += \
         headers/ \
         sources/ \
