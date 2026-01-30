@@ -131,10 +131,10 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
         tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
     } else if(buffer == ";") {
         tokens.push_back({lineNumber, buffer, Token::Type::Endl});
-    } else {
-        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     } else if(buffer == "//") {// skip comment line
         return ITS_COMMENT;
+    } else {
+        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
     seh.checkError(tokens);
     return 0;
