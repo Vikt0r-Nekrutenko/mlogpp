@@ -58,8 +58,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
         R"((and|or|if|else|mlog|cell\d+|function)|)" // keywords
         R"((-?\d+\.\d+|-?\d+)|)" // numbers
         R"(([a-zA-Z_][\w]*)|)" // variables
-        R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
-        );
+        R"((\/\/|!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)"); // operators
     auto wordsBegin = std::sregex_iterator(line.begin(), line.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
@@ -76,6 +75,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
+            if(buffer == "//") return 0;
             tokenizeOperators(lineNumber, tokens, buffer, seh);
         }
     }
