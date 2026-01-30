@@ -1,6 +1,8 @@
 #include "tokenizer.hpp"
 #include "syntax_error_handler.hpp"
 
+#define ITS_COMMENT 0x1
+
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
     : mValue{v}, mLineNumber{ln}, mType{t} {}
 
@@ -55,11 +57,10 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
 {
     const std::regex pattern(
         R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-        R"((and|or|if|else|mlog|cell\d+|function)|)" // keywords
+        R"((and|or|if|else|mlog|function)|)" // keywords
         R"((-?\d+\.\d+|-?\d+)|)" // numbers
         R"(([a-zA-Z_][\w]*)|)" // variables
-        R"((!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)" // operators
-        );
+        R"((\/\/|!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)"); // operators
     auto wordsBegin = std::sregex_iterator(line.begin(), line.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
@@ -76,7 +77,9 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
-            tokenizeOperators(lineNumber, tokens, buffer, seh);
+            int result = tokenizeOperators(lineNumber, tokens, buffer, seh);
+            if(result == ITS_COMMENT)
+              return 0;
         }
     }
     return 0;
@@ -109,9 +112,9 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordElse});
     } else if(keyword == "mlog") {
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
-    } else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
+    } /*else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
-    } else if(keyword == "function") {
+    }*/ else if(keyword == "function") {
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordFunction});
     }
     seh.checkError(tokens);
@@ -128,6 +131,11 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
         tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
     } else if(buffer == ";") {
         tokens.push_back({lineNumber, buffer, Token::Type::Endl});
+    } else if(buffer == "//") {// skip comment line
+        return ITS_COMMENT;
+    } else if(buffer == "[") {
+        tokens.back().type() = Token::Type::CellAccess;
+        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
