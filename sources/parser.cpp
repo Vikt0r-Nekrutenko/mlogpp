@@ -28,6 +28,9 @@ ASTNode *Parser::parseExpression(int minPrec)
 
 ASTNode *Parser::parsePrimary()
 {
+    if(peek().type() == Token::Type::BuildInFunctionCall) {
+        return parseBuildInFunctionCall();
+    }
     Token t = consume();
     if(t.value() == "(" || t.value() == "["){
         return parseExpression(0);
@@ -155,8 +158,6 @@ ASTCellAccessNode *Parser::parseCellAccess()
     return root;
 }
 
-                         // std::cerr<<"\t"<<peek().info()<<std::endl;throw;
-
 void Parser::parseFunctionImplementation()
 {
     consume(); // pass 'function' keyword
@@ -171,6 +172,21 @@ void Parser::parseFunctionImplementation()
         blocks.push(mainBlock);
     }
     consume();
+}
+
+ASTNode *Parser::parseBuildInFunctionCall()
+{
+    auto node = new ASTNode(consume()); // pass function name
+    consume(); // pass (
+    while(peek().value() != ")") {
+        //std::cerr<<"\t"<<peek().info()<<std::endl;
+        auto argument = new ASTNode(peek());
+        node->childs.push_back(argument);
+        consume();
+    }
+    //mainBlock->childs.push_back(node);
+    consume();
+    return node;
 }
 
 Parser::Parser(const std::vector<Token> &t) : mTokens{t} {}
@@ -203,6 +219,8 @@ ASTNode *Parser::parse()
         parseCellAccess();
     } else if(peek().type() == Token::Type::KeywordFunction) {
         parseFunctionImplementation();
+    } else if(peek().type() == Token::Type::BuildInFunctionCall) {
+        parseBuildInFunctionCall();
     }
     return parse();
 }

@@ -44,6 +44,8 @@ class Parser
     ASTCellAccessNode *parseCellAccess();
 
     void parseFunctionImplementation();
+    
+    ASTNode *parseBuildInFunctionCall();
 
 public:
 

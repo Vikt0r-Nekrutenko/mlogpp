@@ -30,6 +30,10 @@ class Token
         CellAccess,
         KeywordFunction,
         FunctionName,
+        FunctionCall,
+        BuildInFunctionCall,
+        Entity,
+        Attribute,
     };
 
     std::map<Type, std::string> TypeMap {
@@ -47,7 +51,11 @@ class Token
         {Type::CellAccess, "CellAccess"},
         {Type::KeywordFunction, "FunctionKeyword"},
         {Type::FunctionName, "FunctionName"},
+        {Type::FunctionCall, "FunctionCall"},
+        {Type::BuildInFunctionCall, "BuildInFunctionCall"},
         {Type::MlogValue, "MlogValue"},
+        {Type::Entity, "Entity"},
+        {Type::Attribute, "Attribute"},
     };
 
     Token(size_t ln, const std::string &v, Type t);
@@ -76,7 +84,6 @@ class Token
     size_t mLineNumber;
     Type mType;
 };
-
 
 int tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
 int tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
