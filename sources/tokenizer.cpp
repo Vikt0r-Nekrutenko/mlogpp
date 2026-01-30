@@ -5,6 +5,7 @@
 
 std::map<std::string, bool> buildInFunctionsNames {
     {"sensor", true},
+    {"control", true},
 };
 
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)

@@ -41,9 +41,13 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << "set " << left->token.value() << " " << value << std::endl;
         return left->token.value();
     } else if(token.type() == Token::Type::BuildInFunctionCall) {
-        std::string resultVariable = "_tempVar" + std::to_string(tempVariableN++);
-        stream << token.value() << " " << resultVariable << " " << childs.at(0)->token.value() << " "  << childs.at(1)->token.value() << std::endl;
-        return resultVariable;
+        if(token.value() == "sensor") {
+            std::string resultVariable = "_tempVar" + std::to_string(tempVariableN++);
+            stream << token.value() << " " << resultVariable << " " << childs.at(0)->token.value() << " "  << childs.at(1)->token.value() << std::endl;
+            return resultVariable;
+        } else if(token.value() == "control") {
+            stream << token.value() << " " << childs.at(1)->token.value() << " "  << childs.at(0)->token.value() << " " << childs.at(2)->token.value() << std::endl;
+        }
     }
 
     for(auto ch : childs) {

@@ -29,7 +29,7 @@ ASTNode *Parser::parseExpression(int minPrec)
 ASTNode *Parser::parsePrimary()
 {
     if(peek().type() == Token::Type::BuildInFunctionCall) {
-        return parseBuildInFunctionCall();
+        return parseBuildInFunctionCall(true);
     }
     Token t = consume();
     if(t.value() == "(" || t.value() == "["){
@@ -174,7 +174,7 @@ void Parser::parseFunctionImplementation()
     consume();
 }
 
-ASTNode *Parser::parseBuildInFunctionCall()
+ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
 {
     auto node = new ASTNode(consume()); // pass function name
     consume(); // pass (
@@ -184,7 +184,8 @@ ASTNode *Parser::parseBuildInFunctionCall()
         node->childs.push_back(argument);
         consume();
     }
-    //mainBlock->childs.push_back(node);
+    if(!callFromExpression)
+        mainBlock->childs.push_back(node);
     consume();
     return node;
 }
