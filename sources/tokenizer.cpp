@@ -75,7 +75,8 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
-            if(buffer == "//") return 0;
+            if(buffer == "//") // skip comment line
+              return 0;
             tokenizeOperators(lineNumber, tokens, buffer, seh);
         }
     }
