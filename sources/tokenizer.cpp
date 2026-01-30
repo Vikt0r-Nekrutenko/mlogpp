@@ -1,6 +1,8 @@
 #include "tokenizer.hpp"
 #include "syntax_error_handler.hpp"
 
+#define ITS_COMMENT 0x1
+
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
     : mValue{v}, mLineNumber{ln}, mType{t} {}
 
@@ -75,9 +77,9 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
         } else if(match[5].matched) { // operators
             std::string buffer = match[5].str();
-            if(buffer == "//") // skip comment line
+            int result = tokenizeOperators(lineNumber, tokens, buffer, seh);
+            if(result == ITS_COMMENT)
               return 0;
-            tokenizeOperators(lineNumber, tokens, buffer, seh);
         }
     }
     return 0;
@@ -131,6 +133,8 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
         tokens.push_back({lineNumber, buffer, Token::Type::Endl});
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+    } else if(buffer == "//") {// skip comment line
+        return ITS_COMMENT;
     }
     seh.checkError(tokens);
     return 0;
