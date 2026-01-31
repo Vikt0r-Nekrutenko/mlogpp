@@ -66,7 +66,7 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
 {
     const std::regex pattern(
         R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-        R"((and|or|if|else|mlog|function)|)" // keywords
+        R"((and|or|if|else|mlog|function|return)|)" // keywords
         R"((-?\d+\.\d+|-?\d+)|)" // numbers
         R"(([a-zA-Z_][\w]*)|)" // variables
         R"((\.|\/\/|!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)"); // operators
@@ -130,6 +130,8 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
     }*/ else if(keyword == "function") {
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordFunction});
+    } else if(keyword == "return") {
+        tokens.push_back({lineNumber, keyword, Token::Type::ReturnKeyword});
     }
     seh.checkError(tokens);
     return 0;

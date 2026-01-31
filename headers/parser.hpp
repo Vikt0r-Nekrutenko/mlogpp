@@ -43,7 +43,7 @@ class Parser
 
     ASTCellAccessNode *parseCellAccess();
 
-    void parseFunctionImplementation();
+    ASTNode *parseFunctionImplementation(bool callFromExpression = false);
     
     ASTNode *parseBuildInFunctionCall(bool callFromExpression = false);
     

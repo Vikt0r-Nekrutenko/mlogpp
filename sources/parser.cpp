@@ -1,6 +1,8 @@
 #include "parser.hpp"
 #include <iostream>
 
+ASTFunctionImplementationBlock *currentFunction;
+
 Token Parser::peek() { return mTokens[mPos]; }
 
 Token Parser::consume() { return mTokens[mPos++]; }
@@ -30,6 +32,9 @@ ASTNode *Parser::parsePrimary()
 {
     if(peek().type() == Token::Type::BuildInFunctionCall) {
         return parseBuildInFunctionCall(true);
+    }
+    if(peek().type() == Token::Type::FunctionCall) {
+        return parseFunctionCall(true);
     }
     Token t = consume();
     if(t.value() == "(" || t.value() == "["){
@@ -107,6 +112,8 @@ void Parser::parseBlockClose()
         blocks.pop();
     mainBlock = blocks.top();
     std::cout << "] | Now: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
+    if(mainBlock->token.type() == Token::Type::FunctionName)
+        currentFunction = (ASTFunctionImplementationBlock*)mainBlock;
     consume();
 }
 
@@ -158,11 +165,13 @@ ASTCellAccessNode *Parser::parseCellAccess()
     return root;
 }
 
-void Parser::parseFunctionImplementation()
+ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
 {
     consume(); // pass 'function' keyword
     auto functionName = consume(); // and pass '('
     auto newBlock = new ASTFunctionImplementationBlock(functionName);
+    currentFunction = newBlock;
+    newBlock->label += functionName.value();
     consume();
     while(peek().value() != ")") {
         newBlock->params.push_back(consume());
@@ -172,12 +181,14 @@ void Parser::parseFunctionImplementation()
     consume(); // pass '{'
     if(mainBlock != nullptr) {
         //std::cerr<<"\tCurrent token 1: "<<newBlock->token.info()<<std::endl;
-        mainBlock = addBlock(newBlock);
+        if(!callFromExpression)
+            mainBlock = addBlock(newBlock);
     } else {
         blocks.push(newBlock);
-        mainBlock = blocks.top();
+        //mainBlock = blocks.top();
         //std::cerr<<"\tCurrent token 2: "<<mainBlock->token.info()<<std::endl;
     }
+    return newBlock;
 }
 
 ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
@@ -209,7 +220,8 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     }
     mPos = funcPos;
     //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
-    parseFunctionImplementation();
+    
+    mainBlock = parseFunctionImplementation();
     //consume(); // pass 'function'
     //consume(); // pass function name
     //consume(); // pass (
@@ -277,6 +289,13 @@ ASTNode *Parser::parse()
         parseFunctionCall();
     } else if(peek().type() == Token::Type::Argument || peek().type() == Token::Type::Parameter) {
         //consume();
-    }
+    } else if(peek().type() == Token::Type::ReturnKeyword) {
+        auto node = new ASTReturnNode(consume());
+        node->function = currentFunction;
+        std::string retvarname = "_retVar_" + node->function->token.value();
+        node->left = new ASTNode({peek().lineNumber(), retvarname, Token::Type::Variable});
+        node->right = parseExpression(0);
+        mainBlock->childs.push_back(node);
+    } 
     return parse();
 }

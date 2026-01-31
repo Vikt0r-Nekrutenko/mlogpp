@@ -44,7 +44,9 @@ struct ASTIfBlock : public ASTNode
 struct ASTFunctionImplementationBlock : public ASTNode
 {
     std::vector<mlogpp::Token> params;
+    std::string label = "ENDFUNCTION_";
     ASTFunctionImplementationBlock(const mlogpp::Token &t);
+    std::string outMlogCode(std::ostream &stream) override;
 };
 
 struct ASTElseBlock : public ASTNode
@@ -64,6 +66,13 @@ struct ASTCellAccessNode : public ASTNode
 
     ASTCellAccessNode(const mlogpp::Token &t, CellAccessType cat);
 
+    std::string outMlogCode(std::ostream &stream) override;
+};
+
+struct ASTReturnNode : public ASTNode
+{
+    ASTFunctionImplementationBlock* function = nullptr;
+    ASTReturnNode(const mlogpp::Token &t);
     std::string outMlogCode(std::ostream &stream) override;
 };
 
