@@ -179,7 +179,7 @@ ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
     auto node = new ASTNode(consume()); // pass function name
     consume(); // pass (
     while(peek().value() != ")") {
-        //std::cerr<<"\t"<<peek().info()<<std::endl;
+        
         auto argument = new ASTNode(peek());
         node->childs.push_back(argument);
         consume();
@@ -187,6 +187,41 @@ ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
     if(!callFromExpression)
         mainBlock->childs.push_back(node);
     consume();
+    return node;
+}
+
+ASTNode *Parser::parseFunctionCall(bool callFromExpression)
+{
+    auto callPos = mPos;
+    auto funcPos = findFunctionByName(peek().value());
+    auto node = new ASTNode(consume());
+    consume();
+    std::vector<std::string> arguments;
+    while(peek().value() != ")") {
+        arguments.push_back(consume().value());
+    }
+    mPos = funcPos;
+    consume(); // pass 'function'
+    consume(); // pass function name
+    consume(); // pass (
+    //for(auto a : arguments) std::cout<<"ARG:"<<a<<std::endl;
+    for(size_t i = 0; i < arguments.size(); ++i) {
+        auto argToParamAssigment = new ASTNode({peek().lineNumber(), "=", Token::Type::Assigment});
+        argToParamAssigment->left = new ASTNode(peek());
+        argToParamAssigment->right = new ASTNode({peek().lineNumber(), arguments.at(i), Token::Type::Variable});
+        node->childs.push_back(argToParamAssigment);
+        consume(); // jump to next argument
+    }
+    // node->printTree(0);
+    consume(); // pass )
+    consume(); // pass {
+    mainBlock = addBlock(node);
+    // std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    parse();
+    mPos = callPos; // return to call function
+    while(peek().value() != ")")
+        consume();
+    consume(); // pass )
     return node;
 }
 
@@ -209,6 +244,10 @@ ASTNode *Parser::parse()
     } else if(peek().type() == Token::Type::BlockStart) {
         parseBlockOpen();
     } else if (peek().type() == Token::Type::BlockEnd && blocks.size() > 1) {
+        if(mainBlock->token.type() == Token::Type::FunctionCall) {
+            parseBlockClose();
+            return nullptr;
+        }
         parseBlockClose();
     } else if(peek().type() == Token::Type::KeywordMlog) {
         parseMlogKeyword();
@@ -222,6 +261,8 @@ ASTNode *Parser::parse()
         parseFunctionImplementation();
     } else if(peek().type() == Token::Type::BuildInFunctionCall) {
         parseBuildInFunctionCall();
+    } else if(peek().type() == Token::Type::FunctionCall) {
+        parseFunctionCall();
     }
     return parse();
 }

@@ -8,6 +8,8 @@ std::map<std::string, bool> buildInFunctionsNames {
     {"control", true},
 };
 
+std::map<std::string, bool> functionsNames;
+
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
     : mValue{v}, mLineNumber{ln}, mType{t} {}
 
@@ -157,12 +159,14 @@ int mlogpp::tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const st
 {
     if(!tokens.empty() && tokens.back().type() == Token::Type::KeywordFunction) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionName});
-        //functionsNames[name] = true;
+        functionsNames[name] = true;
     } else if(curTok != nullptr) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
         curTok = nullptr;
     } else if(buildInFunctionsNames[name] == true) {
         tokens.push_back({lineNumber, name, Token::Type::BuildInFunctionCall});
+    } else if(functionsNames[name] == true) {
+        tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
     } else
         tokens.push_back({lineNumber, name, Token::Type::Variable});
     seh.checkError(tokens);

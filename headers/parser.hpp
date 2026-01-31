@@ -46,6 +46,8 @@ class Parser
     void parseFunctionImplementation();
     
     ASTNode *parseBuildInFunctionCall(bool callFromExpression = false);
+    
+    ASTNode *parseFunctionCall(bool callFromExpression = false);
 
 public:
 
