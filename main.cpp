@@ -30,9 +30,9 @@ void readFile(std::ifstream &sourceFile, std::ostream &resultFile) {
         std::cout << "\n________Mlog code:________" << std::endl;
         ast->outMlogCode(resultFile);
     } catch(const std::string &ex) {
-        std::cerr << "\t" << ex << std::endl;
+        std::cerr << "\tException: " << ex << std::endl;
     } catch(const char *ex) {
-        std::cerr << "\t" << ex << std::endl;
+        std::cerr << "\ttException: " << ex << std::endl;
     }
 }
 

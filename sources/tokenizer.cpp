@@ -3,6 +3,15 @@
 
 #define ITS_COMMENT 0x1
 
+int functionToken = 0;
+
+std::map<std::string, bool> buildInFunctionsNames {
+    {"sensor", true},
+    {"control", true},
+};
+
+std::map<std::string, bool> functionsNames;
+
 mlogpp::Token::Token(size_t ln, const std::string &v, Type t)
     : mValue{v}, mLineNumber{ln}, mType{t} {}
 
@@ -57,10 +66,10 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
 {
     const std::regex pattern(
         R"(\s*("(?:[^"\\]|\\.)*")|)" // strings
-        R"((and|or|if|else|mlog|function)|)" // keywords
+        R"((and|or|if|else|mlog|function|return)|)" // keywords
         R"((-?\d+\.\d+|-?\d+)|)" // numbers
         R"(([a-zA-Z_][\w]*)|)" // variables
-        R"((\/\/|!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)"); // operators
+        R"((\.|\/\/|!=|==|<=|>=|[\;\+\-\/\*\=\(\)\<\>\&\|\%|\{|\}\[\]])|)"); // operators
     auto wordsBegin = std::sregex_iterator(line.begin(), line.end(), pattern);
     auto wordEnd = std::sregex_iterator();
     for(auto i = wordsBegin; i != wordEnd; ++i) {
@@ -71,7 +80,12 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             std::string keyword = match[2].str();
             tokenizeKeywords(lineNumber, tokens, keyword, seh);
         } else if(match[3].matched) { // numbers
-            tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
+            if(functionToken == 1)
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Parameter});
+            else if(functionToken == 2)
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Argument});
+            else
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
             seh.checkError(tokens);
         } else if(match[4].matched) { // variables
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
@@ -116,10 +130,14 @@ int mlogpp::tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, cons
         tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
     }*/ else if(keyword == "function") {
         tokens.push_back({lineNumber, keyword, Token::Type::KeywordFunction});
+    } else if(keyword == "return") {
+        tokens.push_back({lineNumber, keyword, Token::Type::ReturnKeyword});
     }
     seh.checkError(tokens);
     return 0;
 }
+
+mlogpp::Token *curTok = nullptr;
 
 int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::string buffer, SyntaxErrorHandler &seh)
 {
@@ -136,6 +154,14 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
     } else if(buffer == "[") {
         tokens.back().type() = Token::Type::CellAccess;
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+    } else if(buffer == ".") {
+        tokens.back().type() = Token::Type::Entity;
+        curTok = &tokens.back();
+    } else if(buffer == ")") {
+        if(functionToken != 0) {
+            functionToken = 0;
+        }
+        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
@@ -145,10 +171,27 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
 
 int mlogpp::tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const std::string name, SyntaxErrorHandler &seh)
 {
-    if(!tokens.empty() && tokens.back().type() == Token::Type::KeywordFunction)
+    if(!tokens.empty() && tokens.back().type() == Token::Type::KeywordFunction) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionName});
-    else
-        tokens.push_back({lineNumber, name, Token::Type::Variable});
+        functionsNames[name] = true;
+        functionToken = 1;
+    } else if(curTok != nullptr) {
+        tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
+        curTok = nullptr;
+    } else if(buildInFunctionsNames[name] == true) {
+        tokens.push_back({lineNumber, name, Token::Type::BuildInFunctionCall});
+        functionToken = 2;
+    } else if(functionsNames[name] == true) {
+        tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
+        functionToken = 2;
+    } else {
+        if(functionToken == 1)
+            tokens.push_back({lineNumber, name, Token::Type::Parameter});
+        else if(functionToken == 2)
+            tokens.push_back({lineNumber, name, Token::Type::Argument});
+        else
+            tokens.push_back({lineNumber, name, Token::Type::Variable});
+    }
     seh.checkError(tokens);
     return 0;
 }

@@ -34,13 +34,29 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << token.value() << std::endl;
     else if(token.type() == Token::Token::Type::String)
         return "\"" + token.value() + "\"";
-    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable)
+    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable || token.type() == Token::Type::Argument)
         return token.value();
     else if(token.type() == Token::Type::Assigment) {
         std::string value = rightNodeOutMlogCode(stream);
         stream << "set " << left->token.value() << " " << value << std::endl;
         return left->token.value();
-    }
+    } else if(token.type() == Token::Type::BuildInFunctionCall) {
+        if(token.value() == "sensor") {
+            std::string resultVariable = "_tempVar" + std::to_string(tempVariableN++);
+            stream << token.value() << " " << resultVariable << " " << childs.at(0)->token.value() << " "  << childs.at(1)->token.value() << std::endl;
+            return resultVariable;
+        } else if(token.value() == "control") {
+            stream << token.value() << " " << childs.at(1)->token.value() << " "  << childs.at(0)->token.value() << " " << childs.at(2)->token.value() << std::endl;
+        }
+    } /*else if(token.type() == Token::Type::FunctionName) {
+        for(auto ch : childs)
+            ch->outMlogCode(stream);
+        return childs.back()->left->token.value();
+    } else if(token.type() == Token::Type::ReturnKeyword) {
+        std::string value = rightNodeOutMlogCode(stream);
+        stream << "set " << left->token.value() << " " << value << std::endl;
+        return left->token.value();
+    }*/
 
     for(auto ch : childs) {
         ch->outMlogCode(stream);
@@ -55,6 +71,11 @@ void ASTNode::printTree(size_t depth) const
     }
 
     std::cout << (left != nullptr ? " -> " : "") << "[" << token.value() << "]";
+    if(token.type() == Token::Type::KeywordFunction) {
+        auto ft = static_cast<const ASTFunctionImplementationBlock*>(this);
+        for(auto p : ft->params)
+            std::cout << p.value() << " ";
+    }
 
     if(right != nullptr) {
         std::cout << " <- ";
@@ -100,6 +121,14 @@ std::string ASTIfBlock::outMlogCode(std::ostream &stream)
 
 ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const Token &t)
     : ASTNode(t) {}
+    
+std::string ASTFunctionImplementationBlock::outMlogCode(std::ostream &stream)
+{
+    for(auto ch : childs)
+        ch->outMlogCode(stream);
+    stream << label << ":" << std::endl;
+    return childs.back()->left->token.value();
+}
 
 ASTElseBlock::ASTElseBlock(const Token &t)
     : ASTNode(t) {}
@@ -121,4 +150,15 @@ std::string ASTCellAccessNode::outMlogCode(std::ostream &stream)
     std::string rvalue = rightNodeOutMlogCode(stream);
     stream << (accessType == Read ? "read " : "write ") << lvalue << " " << token.value() << " " << rvalue << std::endl;
     return "";
+}
+
+ASTReturnNode::ASTReturnNode(const Token &t)
+    : ASTNode(t) {}
+
+std::string ASTReturnNode::outMlogCode(std::ostream &stream)
+{
+    std::string value = rightNodeOutMlogCode(stream);
+    stream << "set " << left->token.value() << " " << value << std::endl;
+    stream << "jump " << function->label << " always" << std::endl;
+    return left->token.value();
 }

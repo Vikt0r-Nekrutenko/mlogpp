@@ -1,6 +1,8 @@
 #include "parser.hpp"
 #include <iostream>
 
+ASTFunctionImplementationBlock *currentFunction;
+
 Token Parser::peek() { return mTokens[mPos]; }
 
 Token Parser::consume() { return mTokens[mPos++]; }
@@ -28,6 +30,12 @@ ASTNode *Parser::parseExpression(int minPrec)
 
 ASTNode *Parser::parsePrimary()
 {
+    if(peek().type() == Token::Type::BuildInFunctionCall) {
+        return parseBuildInFunctionCall(true);
+    }
+    if(peek().type() == Token::Type::FunctionCall) {
+        return parseFunctionCall(true);
+    }
     Token t = consume();
     if(t.value() == "(" || t.value() == "["){
         return parseExpression(0);
@@ -53,7 +61,7 @@ ASTNode *Parser::addBlock(ASTNode *block)
     std::cout << "\tNow: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value();
     mainBlock->childs.push_back(block);
     blocks.push(mainBlock->childs.back());
-    std::cout << "] | Add: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
+    std::cout << "] | Add: [" << blocks.top()->token.lineNumber() << ":" << blocks.top()->token.value() << "]" << std::endl;
     return blocks.top();
 }
 
@@ -104,6 +112,8 @@ void Parser::parseBlockClose()
         blocks.pop();
     mainBlock = blocks.top();
     std::cout << "] | Now: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
+    if(mainBlock->token.type() == Token::Type::FunctionName)
+        currentFunction = (ASTFunctionImplementationBlock*)mainBlock;
     consume();
 }
 
@@ -155,22 +165,87 @@ ASTCellAccessNode *Parser::parseCellAccess()
     return root;
 }
 
-                         // std::cerr<<"\t"<<peek().info()<<std::endl;throw;
-
-void Parser::parseFunctionImplementation()
+ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
 {
     consume(); // pass 'function' keyword
     auto functionName = consume(); // and pass '('
+    auto newBlock = new ASTFunctionImplementationBlock(functionName);
+    currentFunction = newBlock;
+    newBlock->label += functionName.value();
+    consume();
+    while(peek().value() != ")") {
+        newBlock->params.push_back(consume());
+    }
+    
     consume(); // pass ')'
     consume(); // pass '{'
     if(mainBlock != nullptr) {
-        auto newBlock = new ASTFunctionImplementationBlock(functionName);
-        mainBlock = addBlock(newBlock);
+        //std::cerr<<"\tCurrent token 1: "<<newBlock->token.info()<<std::endl;
+        if(!callFromExpression)
+            mainBlock = addBlock(newBlock);
     } else {
-        mainBlock = new ASTFunctionImplementationBlock(functionName);
-        blocks.push(mainBlock);
+        blocks.push(newBlock);
+        //mainBlock = blocks.top();
+        //std::cerr<<"\tCurrent token 2: "<<mainBlock->token.info()<<std::endl;
     }
+    return newBlock;
+}
+
+ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
+{
+    auto node = new ASTNode(consume()); // pass function name
+    consume(); // pass (
+    while(peek().value() != ")") {
+        
+        auto argument = new ASTNode(peek());
+        node->childs.push_back(argument);
+        consume();
+    }
+    if(!callFromExpression)
+        mainBlock->childs.push_back(node);
     consume();
+    return node;
+}
+
+ASTNode *Parser::parseFunctionCall(bool callFromExpression)
+{
+    auto callPos = mPos;
+    auto funcPos = findFunctionByName(peek().value());
+    //auto node = new ASTNode(consume());
+    consume(); // pass name
+    consume(); // pass (
+    std::vector<Token> arguments;
+    while(peek().value() != ")") {
+        arguments.push_back(consume());
+    }
+    mPos = funcPos;
+    //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    
+    mainBlock = parseFunctionImplementation();
+    //consume(); // pass 'function'
+    //consume(); // pass function name
+    //consume(); // pass (
+    //for(auto a : arguments) std::cout<<"ARG:"<<a.value()<<std::endl;
+    //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    auto func = static_cast<ASTFunctionImplementationBlock*>(mainBlock);
+    for(size_t i = 0; i < arguments.size(); ++i) {
+        auto argToParamAssigment = new ASTNode({0, "=", Token::Type::Assigment});
+        argToParamAssigment->left = new ASTNode(func->params.at(i));
+        argToParamAssigment->right = new ASTNode(arguments.at(i));
+        func->childs.push_back(argToParamAssigment);
+        //consume(); // jump to next argument
+    }
+    //func->printTree(0);
+    //consume(); // pass )
+    //consume(); // pass {
+    //mainBlock = addBlock(node);
+    //std::cerr<<"\tCurrent token: "<<mainBlock->token.getTypeName()<<std::endl;
+    parse();
+    mPos = callPos; // return to call function
+    while(peek().value() != ")")
+        consume();
+    consume(); // pass )
+    return func;
 }
 
 Parser::Parser(const std::vector<Token> &t) : mTokens{t} {}
@@ -183,7 +258,7 @@ ASTNode *Parser::parse()
         if(mainBlock == nullptr && blocks.empty())
             throw "'function main()' does not exist!";
     }
-    if(mPos >= mTokens.size() - 1) {
+   if(mPos >= mTokens.size() - 1) {
         return mainBlock; // main block
     } else if(peek().type() == Token::Type::KeywordElse) {
         parseElseKeyword();
@@ -192,17 +267,35 @@ ASTNode *Parser::parse()
     } else if(peek().type() == Token::Type::BlockStart) {
         parseBlockOpen();
     } else if (peek().type() == Token::Type::BlockEnd && blocks.size() > 1) {
+        if(mainBlock->token.type() == Token::Type::FunctionName) {
+            parseBlockClose();
+            //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+            return nullptr;
+        }
         parseBlockClose();
     } else if(peek().type() == Token::Type::KeywordMlog) {
         parseMlogKeyword();
     } else if (peek().type() == Token::Type::Endl) {
         consume();
-    } else if (peek().type() == Token::Type::Variable || peek().type() == Token::Type::Assigment) {
+    } else if (peek().type() == Token::Type::Variable || peek().type() == Token::Type::Assigment/* || peek().type() == Token::Type::Parameter || peek().type() == Token::Type::Argument*/) {
         parseAssigment();
     } else if (peek().type() == Token::Type::CellAccess) {
         parseCellAccess();
     } else if(peek().type() == Token::Type::KeywordFunction) {
         parseFunctionImplementation();
-    }
+    } else if(peek().type() == Token::Type::BuildInFunctionCall) {
+        parseBuildInFunctionCall();
+    } else if(peek().type() == Token::Type::FunctionCall) {
+        parseFunctionCall();
+    } else if(peek().type() == Token::Type::Argument || peek().type() == Token::Type::Parameter) {
+        //consume();
+    } else if(peek().type() == Token::Type::ReturnKeyword) {
+        auto node = new ASTReturnNode(consume());
+        node->function = currentFunction;
+        std::string retvarname = "_retVar_" + node->function->token.value();
+        node->left = new ASTNode({peek().lineNumber(), retvarname, Token::Type::Variable});
+        node->right = parseExpression(0);
+        mainBlock->childs.push_back(node);
+    } 
     return parse();
 }
