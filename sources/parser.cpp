@@ -196,9 +196,9 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     auto funcPos = findFunctionByName(peek().value());
     auto node = new ASTNode(consume());
     consume();
-    std::vector<std::string> arguments;
+    std::vector<Token> arguments;
     while(peek().value() != ")") {
-        arguments.push_back(consume().value());
+        arguments.push_back(consume());
     }
     mPos = funcPos;
     consume(); // pass 'function'
@@ -208,7 +208,7 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     for(size_t i = 0; i < arguments.size(); ++i) {
         auto argToParamAssigment = new ASTNode({peek().lineNumber(), "=", Token::Type::Assigment});
         argToParamAssigment->left = new ASTNode(peek());
-        argToParamAssigment->right = new ASTNode({peek().lineNumber(), arguments.at(i), Token::Type::Variable});
+        argToParamAssigment->right = new ASTNode(peek());
         node->childs.push_back(argToParamAssigment);
         consume(); // jump to next argument
     }
@@ -253,7 +253,7 @@ ASTNode *Parser::parse()
         parseMlogKeyword();
     } else if (peek().type() == Token::Type::Endl) {
         consume();
-    } else if (peek().type() == Token::Type::Variable || peek().type() == Token::Type::Assigment) {
+    } else if (peek().type() == Token::Type::Variable || peek().type() == Token::Type::Assigment/* || peek().type() == Token::Type::Parameter || peek().type() == Token::Type::Argument*/) {
         parseAssigment();
     } else if (peek().type() == Token::Type::CellAccess) {
         parseCellAccess();
@@ -263,6 +263,8 @@ ASTNode *Parser::parse()
         parseBuildInFunctionCall();
     } else if(peek().type() == Token::Type::FunctionCall) {
         parseFunctionCall();
+    } else if(peek().type() == Token::Type::Argument || peek().type() == Token::Type::Parameter) {
+        consume();
     }
     return parse();
 }

@@ -3,6 +3,8 @@
 
 #define ITS_COMMENT 0x1
 
+int functionToken = 0;
+
 std::map<std::string, bool> buildInFunctionsNames {
     {"sensor", true},
     {"control", true},
@@ -78,7 +80,12 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
             std::string keyword = match[2].str();
             tokenizeKeywords(lineNumber, tokens, keyword, seh);
         } else if(match[3].matched) { // numbers
-            tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
+            if(functionToken == 1)
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Parameter});
+            else if(functionToken == 2)
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Argument});
+            else
+                tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
             seh.checkError(tokens);
         } else if(match[4].matched) { // variables
             tokenizeName(lineNumber, tokens, match[4].str(), seh);
@@ -148,6 +155,11 @@ int mlogpp::tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, con
     } else if(buffer == ".") {
         tokens.back().type() = Token::Type::Entity;
         curTok = &tokens.back();
+    } else if(buffer == ")") {
+        if(functionToken != 0) {
+            functionToken = 0;
+        }
+        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
@@ -160,15 +172,24 @@ int mlogpp::tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const st
     if(!tokens.empty() && tokens.back().type() == Token::Type::KeywordFunction) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionName});
         functionsNames[name] = true;
+        functionToken = 1;
     } else if(curTok != nullptr) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
         curTok = nullptr;
     } else if(buildInFunctionsNames[name] == true) {
         tokens.push_back({lineNumber, name, Token::Type::BuildInFunctionCall});
+        functionToken = 2;
     } else if(functionsNames[name] == true) {
         tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
-    } else
-        tokens.push_back({lineNumber, name, Token::Type::Variable});
+        functionToken = 2;
+    } else {
+        if(functionToken == 1)
+            tokens.push_back({lineNumber, name, Token::Type::Parameter});
+        else if(functionToken == 2)
+            tokens.push_back({lineNumber, name, Token::Type::Argument});
+        else
+            tokens.push_back({lineNumber, name, Token::Type::Variable});
+    }
     seh.checkError(tokens);
     return 0;
 }

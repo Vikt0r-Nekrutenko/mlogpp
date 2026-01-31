@@ -32,6 +32,8 @@ class Token
         FunctionName,
         FunctionCall,
         BuildInFunctionCall,
+        Parameter,
+        Argument,
         Entity,
         Attribute,
     };
@@ -53,6 +55,8 @@ class Token
         {Type::FunctionName, "FunctionName"},
         {Type::FunctionCall, "FunctionCall"},
         {Type::BuildInFunctionCall, "BuildInFunctionCall"},
+        {Type::Parameter, "Parameter"},
+        {Type::Argument, "Argument"},
         {Type::MlogValue, "MlogValue"},
         {Type::Entity, "Entity"},
         {Type::Attribute, "Attribute"},
