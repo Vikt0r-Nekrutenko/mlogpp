@@ -43,6 +43,7 @@ struct ASTIfBlock : public ASTNode
 
 struct ASTFunctionImplementationBlock : public ASTNode
 {
+    std::vector<mlogpp::Token> params;
     ASTFunctionImplementationBlock(const mlogpp::Token &t);
 };
 

@@ -56,7 +56,7 @@ ASTNode *Parser::addBlock(ASTNode *block)
     std::cout << "\tNow: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value();
     mainBlock->childs.push_back(block);
     blocks.push(mainBlock->childs.back());
-    std::cout << "] | Add: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
+    std::cout << "] | Add: [" << blocks.top()->token.lineNumber() << ":" << blocks.top()->token.value() << "]" << std::endl;
     return blocks.top();
 }
 
@@ -162,16 +162,22 @@ void Parser::parseFunctionImplementation()
 {
     consume(); // pass 'function' keyword
     auto functionName = consume(); // and pass '('
+    auto newBlock = new ASTFunctionImplementationBlock(functionName);
+    consume();
+    while(peek().value() != ")") {
+        newBlock->params.push_back(consume());
+    }
+    
     consume(); // pass ')'
     consume(); // pass '{'
     if(mainBlock != nullptr) {
-        auto newBlock = new ASTFunctionImplementationBlock(functionName);
+        //std::cerr<<"\tCurrent token 1: "<<newBlock->token.info()<<std::endl;
         mainBlock = addBlock(newBlock);
     } else {
-        mainBlock = new ASTFunctionImplementationBlock(functionName);
-        blocks.push(mainBlock);
+        blocks.push(newBlock);
+        mainBlock = blocks.top();
+        //std::cerr<<"\tCurrent token 2: "<<mainBlock->token.info()<<std::endl;
     }
-    consume();
 }
 
 ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
@@ -194,35 +200,40 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
 {
     auto callPos = mPos;
     auto funcPos = findFunctionByName(peek().value());
-    auto node = new ASTNode(consume());
-    consume();
+    //auto node = new ASTNode(consume());
+    consume(); // pass name
+    consume(); // pass (
     std::vector<Token> arguments;
     while(peek().value() != ")") {
         arguments.push_back(consume());
     }
     mPos = funcPos;
-    consume(); // pass 'function'
-    consume(); // pass function name
-    consume(); // pass (
-    //for(auto a : arguments) std::cout<<"ARG:"<<a<<std::endl;
+    //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    parseFunctionImplementation();
+    //consume(); // pass 'function'
+    //consume(); // pass function name
+    //consume(); // pass (
+    //for(auto a : arguments) std::cout<<"ARG:"<<a.value()<<std::endl;
+    //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    auto func = static_cast<ASTFunctionImplementationBlock*>(mainBlock);
     for(size_t i = 0; i < arguments.size(); ++i) {
-        auto argToParamAssigment = new ASTNode({peek().lineNumber(), "=", Token::Type::Assigment});
-        argToParamAssigment->left = new ASTNode(peek());
-        argToParamAssigment->right = new ASTNode(peek());
-        node->childs.push_back(argToParamAssigment);
-        consume(); // jump to next argument
+        auto argToParamAssigment = new ASTNode({0, "=", Token::Type::Assigment});
+        argToParamAssigment->left = new ASTNode(func->params.at(i));
+        argToParamAssigment->right = new ASTNode(arguments.at(i));
+        func->childs.push_back(argToParamAssigment);
+        //consume(); // jump to next argument
     }
-    // node->printTree(0);
-    consume(); // pass )
-    consume(); // pass {
-    mainBlock = addBlock(node);
-    // std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
+    //func->printTree(0);
+    //consume(); // pass )
+    //consume(); // pass {
+    //mainBlock = addBlock(node);
+    //std::cerr<<"\tCurrent token: "<<mainBlock->token.getTypeName()<<std::endl;
     parse();
     mPos = callPos; // return to call function
     while(peek().value() != ")")
         consume();
     consume(); // pass )
-    return node;
+    return func;
 }
 
 Parser::Parser(const std::vector<Token> &t) : mTokens{t} {}
@@ -235,7 +246,7 @@ ASTNode *Parser::parse()
         if(mainBlock == nullptr && blocks.empty())
             throw "'function main()' does not exist!";
     }
-    if(mPos >= mTokens.size() - 1) {
+   if(mPos >= mTokens.size() - 1) {
         return mainBlock; // main block
     } else if(peek().type() == Token::Type::KeywordElse) {
         parseElseKeyword();
@@ -244,8 +255,9 @@ ASTNode *Parser::parse()
     } else if(peek().type() == Token::Type::BlockStart) {
         parseBlockOpen();
     } else if (peek().type() == Token::Type::BlockEnd && blocks.size() > 1) {
-        if(mainBlock->token.type() == Token::Type::FunctionCall) {
+        if(mainBlock->token.type() == Token::Type::FunctionName) {
             parseBlockClose();
+            //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
             return nullptr;
         }
         parseBlockClose();
@@ -264,7 +276,7 @@ ASTNode *Parser::parse()
     } else if(peek().type() == Token::Type::FunctionCall) {
         parseFunctionCall();
     } else if(peek().type() == Token::Type::Argument || peek().type() == Token::Type::Parameter) {
-        consume();
+        //consume();
     }
     return parse();
 }

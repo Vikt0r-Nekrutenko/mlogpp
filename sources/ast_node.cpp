@@ -34,7 +34,7 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << token.value() << std::endl;
     else if(token.type() == Token::Token::Type::String)
         return "\"" + token.value() + "\"";
-    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable)
+    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable || token.type() == Token::Type::Argument)
         return token.value();
     else if(token.type() == Token::Type::Assigment) {
         std::string value = rightNodeOutMlogCode(stream);
@@ -63,6 +63,11 @@ void ASTNode::printTree(size_t depth) const
     }
 
     std::cout << (left != nullptr ? " -> " : "") << "[" << token.value() << "]";
+    if(token.type() == Token::Type::KeywordFunction) {
+        auto ft = static_cast<const ASTFunctionImplementationBlock*>(this);
+        for(auto p : ft->params)
+            std::cout << p.value() << " ";
+    }
 
     if(right != nullptr) {
         std::cout << " <- ";
