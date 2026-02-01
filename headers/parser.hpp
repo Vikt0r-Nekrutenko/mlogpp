@@ -37,7 +37,7 @@ class Parser
 
     void parseBlockClose();
 
-    void parseAssigment();
+    ASTNode *parseAssigment();
 
     void parseMlogKeyword();
 

@@ -142,14 +142,18 @@ std::string ASTElseBlock::outMlogCode(std::ostream &stream)
 }
 
 ASTCellAccessNode::ASTCellAccessNode(const Token &t, CellAccessType cat)
-    : ASTNode(t), accessType{cat} {}
+    : ASTNode(t), accessType{cat} {
+        arg = "_" + t.value() + "Var";
+    }
 
 std::string ASTCellAccessNode::outMlogCode(std::ostream &stream)
 {
-    std::string lvalue = leftNodeOutMlogCode(stream);
     std::string rvalue = rightNodeOutMlogCode(stream);
-    stream << (accessType == Read ? "read " : "write ") << lvalue << " " << token.value() << " " << rvalue << std::endl;
-    return "";
+    std::string lvalue = leftNodeOutMlogCode(stream);
+    if(left)
+        stream << "set " << arg << " " << left->left->token.value() << std::endl;
+    stream << (accessType == Read ? "read " : "write ") << arg << " " << token.value() << " " << rvalue << std::endl;
+    return arg;
 }
 
 ASTReturnNode::ASTReturnNode(const Token &t)

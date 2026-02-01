@@ -62,6 +62,7 @@ struct ASTCellAccessNode : public ASTNode
     typedef enum _CellAccessType {
         Read, Write,
     } CellAccessType;
+    std::string arg;
     CellAccessType accessType;
 
     ASTCellAccessNode(const mlogpp::Token &t, CellAccessType cat);
