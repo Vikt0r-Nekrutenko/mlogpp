@@ -16,6 +16,7 @@ class Token
 
     enum class Type {
         NotToken,
+        Comment,
         Number,
         String,
         Variable,
@@ -40,6 +41,7 @@ class Token
 
     std::map<Type, std::string> TypeMap {
         {Type::NotToken, "Not a token!"},
+        {Type::Comment, "Comment"},
         {Type::Number, "Number"},
         {Type::String, "String"},
         {Type::Variable, "Variable"},

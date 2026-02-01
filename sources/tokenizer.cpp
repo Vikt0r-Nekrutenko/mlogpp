@@ -1,8 +1,6 @@
 #include "tokenizer.hpp"
 #include "syntax_error_handler.hpp"
 
-#define ITS_COMMENT 0x1
-
 #define ITS_NOT_A_FUNCTION 0x0
 #define ITS_FUNCTION_CALL 0x1
 #define ITS_FUNCTION_IMPLEMENTATION 0x2
@@ -71,9 +69,11 @@ int mlogpp::Token::precedence() const
 ///-------------------------------------------------------------------------------------------------------------------------------------------
 
 int tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh);
-int tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, const std::string keyword, SyntaxErrorHandler &seh);
-int tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::string buffer, SyntaxErrorHandler &seh);
+Token::Type tokenizeKeywords(const std::string keyword);
+Token::Type tokenizeOperators(std::vector<Token> &tokens, const std::string buffer);
 Token::Type tokenizeName(std::vector<Token> &tokens, const std::string name);
+Token::Type tokenizeVariableName();
+Token::Type tokenizeNumberName();
 
 int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::string line, SyntaxErrorHandler &seh)
 {
@@ -90,25 +90,23 @@ int mlogpp::tokenize(size_t lineNumber, std::vector<Token> &tokens, const std::s
         if(match[1].matched) { // strings
             tokenizeStrings(match, lineNumber, tokens, line, seh);
         } else if(match[2].matched) { // keywords
-            std::string keyword = match[2].str();
-            tokenizeKeywords(lineNumber, tokens, keyword, seh);
+            Token::Type type = tokenizeKeywords(match[2].str());
+            tokens.push_back({lineNumber, match[2].str(), type});
+            seh.checkError(tokens);
         } else if(match[3].matched) { // numbers
-            if(functionTokenType == ITS_FUNCTION_CALL)
-                tokens.push_back({lineNumber, match[3].str(), Token::Type::Parameter});
-            else if(functionTokenType == ITS_FUNCTION_IMPLEMENTATION)
-                tokens.push_back({lineNumber, match[3].str(), Token::Type::Argument});
-            else
-                tokens.push_back({lineNumber, match[3].str(), Token::Type::Number});
+            Token::Type type = tokenizeNumberName();
+            tokens.push_back({lineNumber, match[3].str(), type});
             seh.checkError(tokens);
         } else if(match[4].matched) { // variables
             Token::Type type = tokenizeName(tokens, match[4].str());
             tokens.push_back({lineNumber, match[4].str(), type});
             seh.checkError(tokens);
         } else if(match[5].matched) { // operators
-            std::string buffer = match[5].str();
-            int result = tokenizeOperators(lineNumber, tokens, buffer, seh);
-            if(result == ITS_COMMENT)
+            Token::Type type = tokenizeOperators(tokens, match[5].str());
+            if(type == Token::Type::Comment)
               return 0;
+            tokens.push_back({lineNumber, match[5].str(), type});
+            seh.checkError(tokens);
         }
     }
     return 0;
@@ -131,52 +129,45 @@ int tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Tok
     return 0;
 }
 
-int tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, const std::string keyword, SyntaxErrorHandler &seh)
+Token::Type tokenizeKeywords(const std::string keyword)
 {
-    Token::Type tokenType = Token::Type::NotToken;
     if(keyword == "and" || keyword == "or") {
-        tokenType = mlogpp::Token::Type::Operator;
+        return mlogpp::Token::Type::Operator;
     } else if(keyword == "if") {
-        tokenType = mlogpp::Token::Type::KeywordIf;
+        return mlogpp::Token::Type::KeywordIf;
     } else if(keyword == "else") {
-        tokenType = mlogpp::Token::Type::KeywordElse;
+        return mlogpp::Token::Type::KeywordElse;
     } else if(keyword == "mlog") {
-        tokenType = mlogpp::Token::Type::KeywordMlog;
+        return mlogpp::Token::Type::KeywordMlog;
     } else if(keyword == "function") {
-        tokenType = mlogpp::Token::Type::KeywordFunction;
+        return mlogpp::Token::Type::KeywordFunction;
     } else if(keyword == "return") {
-        tokenType = mlogpp::Token::Type::ReturnKeyword;
+        return mlogpp::Token::Type::ReturnKeyword;
     }
-    tokens.push_back({lineNumber, keyword, tokenType});
-    seh.checkError(tokens);
-    return 0;
+    return mlogpp::Token::Type::NotToken;
 }
 
-int tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::string buffer, SyntaxErrorHandler &seh)
+Token::Type tokenizeOperators(std::vector<Token> &tokens, const std::string buffer)
 {
-    if(buffer == "=") {
-        tokens.push_back({lineNumber, buffer, Token::Type::Assigment});
-    } else if(buffer == "{") {
-        tokens.push_back({lineNumber, buffer, Token::Type::BlockStart});
-    } else if(buffer == "}") {
-        tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
-    } else if(buffer == ";") {
-        tokens.push_back({lineNumber, buffer, Token::Type::Endl});
-    } else if(buffer == "[") {
-        tokens.back().type() = Token::Type::CellAccess;
-        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+    if(buffer == "=")
+        return Token::Type::Assigment;
+    else if(buffer == "{")
+      return Token::Type::BlockStart;
+    else if(buffer == "}")
+      return Token::Type::BlockEnd;
+    else if(buffer == ";")
+      return Token::Type::Endl;
+    else if(buffer == "[") {
+      tokens.back().type() = Token::Type::CellAccess;
+      return Token::Type::Operator;
     } else if(buffer == ")") {
-        if(functionTokenType != ITS_NOT_A_FUNCTION) {
-            functionTokenType = ITS_NOT_A_FUNCTION;
-        }
-        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
-    } else if(buffer == "//") {// skip comment line
-        return ITS_COMMENT;
-    } else {
-        tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+      if(functionTokenType != ITS_NOT_A_FUNCTION) {
+          functionTokenType = ITS_NOT_A_FUNCTION;
+      }
     }
-    seh.checkError(tokens);
-    return 0;
+    else if(buffer == "//")
+      return mlogpp::Token::Type::Comment;
+    return mlogpp::Token::Type::Operator;
 }
 
 Token::Type tokenizeVariableName()
@@ -186,6 +177,15 @@ Token::Type tokenizeVariableName()
     else if(functionTokenType == ITS_FUNCTION_CALL)
         return mlogpp::Token::Type::Argument;
     return mlogpp::Token::Type::Variable;
+}
+
+Token::Type tokenizeNumberName()
+{
+    if(functionTokenType == ITS_FUNCTION_CALL)
+        return mlogpp::Token::Type::Parameter;
+    else if(functionTokenType == ITS_FUNCTION_IMPLEMENTATION)
+        return mlogpp::Token::Type::Argument;
+    return mlogpp::Token::Type::Number;
 }
 
 Token::Type tokenizeName(std::vector<Token> &tokens, const std::string name)
