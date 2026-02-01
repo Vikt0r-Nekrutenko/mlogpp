@@ -15,6 +15,7 @@ class Token
     public:
 
     enum class Type {
+        NotToken,
         Number,
         String,
         Variable,
@@ -35,11 +36,10 @@ class Token
         ReturnKeyword,
         Parameter,
         Argument,
-        Entity,
-        Attribute,
     };
 
     std::map<Type, std::string> TypeMap {
+        {Type::NotToken, "Not a token!"},
         {Type::Number, "Number"},
         {Type::String, "String"},
         {Type::Variable, "Variable"},
@@ -52,7 +52,7 @@ class Token
         {Type::BlockEnd, "BlockEnd"},
         {Type::Endl, "Endl"},
         {Type::CellAccess, "CellAccess"},
-        {Type::KeywordFunction, "FunctionKeyword"},
+        {Type::KeywordFunction, "KeywordFunction"},
         {Type::ReturnKeyword, "ReturnKeyword"},
         {Type::FunctionName, "FunctionName"},
         {Type::FunctionCall, "FunctionCall"},
@@ -60,8 +60,6 @@ class Token
         {Type::Parameter, "Parameter"},
         {Type::Argument, "Argument"},
         {Type::MlogValue, "MlogValue"},
-        {Type::Entity, "Entity"},
-        {Type::Attribute, "Attribute"},
     };
 
     Token(size_t ln, const std::string &v, Type t);

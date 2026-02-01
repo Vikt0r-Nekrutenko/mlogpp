@@ -131,26 +131,24 @@ int tokenizeStrings(const std::smatch &match, size_t lineNumber, std::vector<Tok
 
 int tokenizeKeywords(size_t lineNumber, std::vector<Token> &tokens, const std::string keyword, SyntaxErrorHandler &seh)
 {
+    Token::Type tokenType = Token::Type::NotToken;
     if(keyword == "and" || keyword == "or") {
-        tokens.push_back({lineNumber, keyword, Token::Type::Operator});
+        tokenType = mlogpp::Token::Type::Operator;
     } else if(keyword == "if") {
-        tokens.push_back({lineNumber, keyword, Token::Type::KeywordIf});
+        tokenType = mlogpp::Token::Type::KeywordIf;
     } else if(keyword == "else") {
-        tokens.push_back({lineNumber, keyword, Token::Type::KeywordElse});
+        tokenType = mlogpp::Token::Type::KeywordElse;
     } else if(keyword == "mlog") {
-        tokens.push_back({lineNumber, keyword, Token::Type::KeywordMlog});
-    } /*else if(keyword.length() > 4 && std::string(keyword.begin(), keyword.begin()+4) == "cell") {
-        tokens.push_back({lineNumber, keyword, Token::Type::CellAccess});
-    }*/ else if(keyword == "function") {
-        tokens.push_back({lineNumber, keyword, Token::Type::KeywordFunction});
+        tokenType = mlogpp::Token::Type::KeywordMlog;
+    } else if(keyword == "function") {
+        tokenType = mlogpp::Token::Type::KeywordFunction;
     } else if(keyword == "return") {
-        tokens.push_back({lineNumber, keyword, Token::Type::ReturnKeyword});
+        tokenType = mlogpp::Token::Type::ReturnKeyword;
     }
+    tokens.push_back({lineNumber, keyword, tokenType});
     seh.checkError(tokens);
     return 0;
 }
-
-mlogpp::Token *curTok = nullptr;
 
 int tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::string buffer, SyntaxErrorHandler &seh)
 {
@@ -162,19 +160,16 @@ int tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::
         tokens.push_back({lineNumber, buffer, Token::Type::BlockEnd});
     } else if(buffer == ";") {
         tokens.push_back({lineNumber, buffer, Token::Type::Endl});
-    } else if(buffer == "//") {// skip comment line
-        return ITS_COMMENT;
     } else if(buffer == "[") {
         tokens.back().type() = Token::Type::CellAccess;
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
-    } else if(buffer == ".") {
-        tokens.back().type() = Token::Type::Entity;
-        curTok = &tokens.back();
     } else if(buffer == ")") {
         if(functionTokenType != ITS_NOT_A_FUNCTION) {
             functionTokenType = ITS_NOT_A_FUNCTION;
         }
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
+    } else if(buffer == "//") {// skip comment line
+        return ITS_COMMENT;
     } else {
         tokens.push_back({lineNumber, buffer, Token::Type::Operator});
     }
@@ -184,12 +179,14 @@ int tokenizeOperators(size_t lineNumber, std::vector<Token> &tokens, const std::
 
 int tokenizeVariableName(size_t lineNumber, std::vector<Token> &tokens, const std::string name, mlogpp::SyntaxErrorHandler &seh)
 {
+    Token::Type tokenType = Token::Type::NotToken;
     if(functionTokenType == ITS_FUNCTION_IMPLEMENTATION)
-        tokens.push_back({lineNumber, name, mlogpp::Token::Type::Parameter});
+        tokenType = mlogpp::Token::Type::Parameter;
     else if(functionTokenType == ITS_FUNCTION_CALL)
-        tokens.push_back({lineNumber, name, mlogpp::Token::Type::Argument});
+        tokenType = mlogpp::Token::Type::Argument;
     else
-        tokens.push_back({lineNumber, name, mlogpp::Token::Type::Variable});
+        tokenType = mlogpp::Token::Type::Variable;
+    tokens.push_back({lineNumber, name, tokenType});
     return 0;
 }
 
@@ -199,9 +196,6 @@ int tokenizeName(size_t lineNumber, std::vector<Token> &tokens, const std::strin
         tokens.push_back({lineNumber, name, Token::Type::FunctionName});
         functionsNames[name] = true;
         functionTokenType = ITS_FUNCTION_IMPLEMENTATION;
-    } else if(curTok != nullptr) {
-        tokens.push_back({lineNumber, name, Token::Type::FunctionCall});
-        curTok = nullptr;
     } else if(buildInFunctionsNames[name] == true) {
         tokens.push_back({lineNumber, name, Token::Type::BuildInFunctionCall});
         functionTokenType = ITS_FUNCTION_CALL;
