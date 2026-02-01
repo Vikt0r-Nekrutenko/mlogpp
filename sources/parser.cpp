@@ -3,7 +3,7 @@
 
 ASTFunctionImplementationBlock *currentFunction;
 
-Token Parser::peek() { return mTokens[mPos]; }
+Token Parser::peek() { if(mPos >= mTokens.size()) throw "out of tokens range: " + std::to_string(mPos); return mTokens[mPos]; }
 
 Token Parser::consume() { return mTokens[mPos++]; }
 
@@ -238,13 +238,13 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     mPos = funcPos;
     //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
     
-    mainBlock = parseFunctionImplementation();
+    ASTFunctionImplementationBlock *fib = (ASTFunctionImplementationBlock*)parseFunctionImplementation(callFromExpression);
     //consume(); // pass 'function'
     //consume(); // pass function name
     //consume(); // pass (
     //for(auto a : arguments) std::cout<<"ARG:"<<a.value()<<std::endl;
     //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
-    auto func = static_cast<ASTFunctionImplementationBlock*>(mainBlock);
+    auto func = fib;
     for(size_t i = 0; i < arguments.size(); ++i) {
         auto argToParamAssigment = new ASTNode({0, "=", Token::Type::Assigment});
         argToParamAssigment->left = new ASTNode(func->params.at(i));
@@ -255,8 +255,7 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     //func->printTree(0);
     //consume(); // pass )
     //consume(); // pass {
-    //mainBlock = addBlock(node);
-    //std::cerr<<"\tCurrent token: "<<mainBlock->token.getTypeName()<<std::endl;
+    // mainBlock = addBlock(node);
     parse();
     mPos = callPos; // return to call function
     while(peek().value() != ")")
@@ -283,10 +282,9 @@ ASTNode *Parser::parse()
         parseIfKeyword();
     } else if(peek().type() == Token::Type::BlockStart) {
         parseBlockOpen();
-    } else if (peek().type() == Token::Type::BlockEnd && blocks.size() > 1) {
+    } else if (peek().type() == Token::Type::BlockEnd) {
         if(mainBlock->token.type() == Token::Type::FunctionName) {
             parseBlockClose();
-            //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
             return nullptr;
         }
         parseBlockClose();
@@ -312,7 +310,7 @@ ASTNode *Parser::parse()
         std::string retvarname = "_retVar_" + node->function->token.value();
         node->left = new ASTNode({peek().lineNumber(), retvarname, Token::Type::Variable});
         node->right = parseExpression(0);
-        mainBlock->childs.push_back(node);
+        currentFunction->childs.push_back(node);
     } 
     return parse();
 }

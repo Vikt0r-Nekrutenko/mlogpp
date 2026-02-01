@@ -161,8 +161,9 @@ ASTReturnNode::ASTReturnNode(const Token &t)
 
 std::string ASTReturnNode::outMlogCode(std::ostream &stream)
 {
+    std::string lvalue = leftNodeOutMlogCode(stream);
     std::string value = rightNodeOutMlogCode(stream);
-    stream << "set " << left->token.value() << " " << value << std::endl;
+    stream << "set " << lvalue << " " << value << std::endl;
     stream << "jump " << function->label << " always" << std::endl;
     return left->token.value();
 }
