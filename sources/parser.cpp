@@ -11,13 +11,17 @@ ASTNode *Parser::parseExpression(int minPrec)
 {
     auto left = parsePrimary();
     while(mPos < mTokens.size() &&
+           peek().type() != Token::Type::Assigment &&
            peek().type() != Token::Type::Endl &&
            peek().type() != Token::Type::BlockStart &&
            peek().type() != Token::Type::BlockEnd &&
            peek().type() != Token::Type::CellAccess &&
            mTokens[mPos].precedence() >= minPrec) {
         Token operatr = consume();
-        if(operatr.value() == ")" || operatr.value() == "]" || operatr.type() == Token::Type::CellAccess) {
+        if(operatr.value() == "]" || 
+        operatr.value() == "=" || 
+        operatr.value() == ")" || 
+        operatr.type() == Token::Type::CellAccess) {
             break;
         }
         auto node = new ASTOperatorNode(operatr);
@@ -36,12 +40,15 @@ ASTNode *Parser::parsePrimary()
     if(peek().type() == Token::Type::FunctionCall) {
         return parseFunctionCall(true);
     }
+    if(peek().type() == Token::Type::CellAccess) {
+        return parseCellAccess();
+    }
+    /*if(peek().type() == Token::Type::Assigment) {
+        return parseAssigment();
+    }*/
     Token t = consume();
-    if(t.value() == "(" || t.value() == "["){
+    if(t.value() == "(" || t.value() == "[") {
         return parseExpression(0);
-    } else if(t.type() == Token::Type::CellAccess) {
-        mPos-=1;
-        return nullptr;
     }
     return new ASTNode(t);
 }
@@ -117,14 +124,18 @@ void Parser::parseBlockClose()
     consume();
 }
 
-void Parser::parseAssigment()
+ASTNode *Parser::parseAssigment()
 {
-    auto left = new ASTNode(consume()); //var
+    auto tkn = peek().type() == Token::Type::Variable ? consume() : Token{peek().lineNumber(), "_", Token::Type::Variable};
+    auto left = new ASTNode(tkn); //var
     auto root = new ASTNode(consume()); //assigment
 
     root->left = std::move(left);
     root->right = parseExpression(0);
-    mainBlock->childs.push_back(root);
+    if(tkn.value() == "_")
+    mainBlock->childs.back()->left = root;
+    else mainBlock->childs.push_back(root);
+    return root;
 }
 
 void Parser::parseMlogKeyword()
@@ -137,23 +148,28 @@ void Parser::parseMlogKeyword()
 ASTCellAccessNode *Parser::parseCellAccess()
 {
     ASTCellAccessNode *root = nullptr;
-    if(mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
-    {
-        auto argumentNode = new ASTNode(*mainBlock->childs.back()->left); // [x] = cell1[0]
-        delete mainBlock->childs.back(); // x [=] cell1[0]
-        mainBlock->childs.pop_back(); // x [=] cell1[0]
+    //if(mTokens.at(mPos - 1).type() == Token::Type::Assigment && mTokens.at(mPos - 2).type() == Token::Type::Variable)
+    //{
+        //auto argumentNode = new ASTNode(*mainBlock->childs.back()->left); // [x] = cell1[0]
+        //delete mainBlock->childs.back(); // x [=] cell1[0]
+        //mainBlock->childs.pop_back(); // x [=] cell1[0]
 
-        root = new ASTCellAccessNode(mTokens.at(mPos), ASTCellAccessNode::CellAccessType::Read);
+        root = new ASTCellAccessNode(peek(), ASTCellAccessNode::CellAccessType::Read);
         consume();
-        root->left = argumentNode;
-        root->right = parsePrimary();
-        mainBlock->childs.push_back(root);
+        consume(); // [
+        size_t assigmentPos = mPos;
+        while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].value() != "]");
+        if(mTokens.at(++assigmentPos).type() == Token::Type::Assigment) {
+            root->accessType = ASTCellAccessNode::CellAccessType::Write;
+            mainBlock->childs.push_back(root);
+        }
+        root->right = parseExpression(0);
+        //root->left = argumentNode;
+        
+        //std::cerr<<"\t"<<peek().info()<<std::endl;
         return root;
-    }
-    size_t assigmentPos = mPos;
-    while(++assigmentPos < mTokens.size() && mTokens[assigmentPos].type() != Token::Type::Assigment);
-    if(mTokens.at(++assigmentPos).type() == Token::Type::Variable) {
-        auto argumentNode = new ASTNode(mTokens.at(assigmentPos)); // [x] = cell1[0]
+    //}
+    /*    auto argumentNode = new ASTNode(mTokens.at(assigmentPos)); // [x] = cell1[0]
         root = new ASTCellAccessNode(mTokens.at(mPos), ASTCellAccessNode::CellAccessType::Write);
 
         consume();
@@ -161,8 +177,8 @@ ASTCellAccessNode *Parser::parseCellAccess()
         root->right = parsePrimary();
         mainBlock->childs.push_back(root);
         mPos = assigmentPos + 1; // x = cell1[0][;]
-    }
-    return root;
+    }*/
+    //return root;
 }
 
 ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
@@ -181,8 +197,9 @@ ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
     consume(); // pass '{'
     if(mainBlock != nullptr) {
         //std::cerr<<"\tCurrent token 1: "<<newBlock->token.info()<<std::endl;
-        if(!callFromExpression)
+        if(!callFromExpression) {
             mainBlock = addBlock(newBlock);
+        }
     } else {
         blocks.push(newBlock);
         //mainBlock = blocks.top();
@@ -254,7 +271,7 @@ ASTNode *Parser::parse()
 {
     if(mainBlock == nullptr && blocks.empty()) {
         mPos = findFunctionByName("main");
-        parseFunctionImplementation();
+        mainBlock = parseFunctionImplementation();
         if(mainBlock == nullptr && blocks.empty())
             throw "'function main()' does not exist!";
     }
