@@ -13,6 +13,10 @@ struct AST_Variable : public ASTNode
     std::string outMlogCode(std::ostream &stream) override;
 };
 
+using AST_Number = AST_Variable;
+using AST_Argument = AST_Variable;
+using AST_Parameter = AST_Variable;
+
 }
 
 #endif // AST_VARIABLE_HPP
