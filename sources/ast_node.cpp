@@ -95,17 +95,6 @@ void ASTNode::printTree(size_t depth) const
     }
 }
 
-ASTElseBlock::ASTElseBlock(const Token &t)
-    : ASTNode(t) {}
-
-std::string ASTElseBlock::outMlogCode(std::ostream &stream)
-{
-    stream << label << ":" << std::endl;
-    ASTNode::outMlogCode(stream);
-    stream << label1 << ":" << std::endl;
-    return "";
-}
-
 ASTCellAccessNode::ASTCellAccessNode(const Token &t, CellAccessType cat)
     : ASTNode(t), accessType{cat} {
         arg = "_" + t.value() + "Var";

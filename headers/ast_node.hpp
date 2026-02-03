@@ -27,19 +27,6 @@ struct ASTNode
 
     void printTree(size_t depth) const;
 };
-
-
-
-
-
-struct ASTElseBlock : public ASTNode
-{
-    ASTElseBlock(const mlogpp::Token &t);
-    std::string label, label1;
-
-    std::string outMlogCode(std::ostream &stream) override;
-};
-
 struct ASTCellAccessNode : public ASTNode
 {
     typedef enum _CellAccessType {
