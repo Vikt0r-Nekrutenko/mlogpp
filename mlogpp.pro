@@ -15,12 +15,14 @@ DEPENDPATH += \
 
 HEADERS += \
         headers/ast_node.hpp \
+        headers/ast_variable.hpp \
         headers/parser.hpp \
         headers/syntax_error_handler.hpp \
         headers/tokenizer.hpp \
         
 SOURCES += \
     sources/ast_node.cpp \
+    sources/ast_variable.cpp \
     sources/parser.cpp \
         sources/syntax_error_handler.cpp \
         main.cpp \

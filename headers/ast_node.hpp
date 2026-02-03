@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace mlogpp {
+
 struct ASTNode
 {
     std::vector<ASTNode*> childs;
@@ -76,5 +78,7 @@ struct ASTReturnNode : public ASTNode
     ASTReturnNode(const mlogpp::Token &t);
     std::string outMlogCode(std::ostream &stream) override;
 };
+
+}
 
 #endif // AST_NODE_HPP

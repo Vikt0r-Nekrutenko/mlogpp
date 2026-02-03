@@ -2,6 +2,7 @@
 #include <iostream>
 
 using namespace mlogpp;
+
 size_t ASTNode::tempVariableN = 0;
 
 ASTNode::ASTNode(const Token &t) : token(Token(t.lineNumber(), t.value(), t.type())) {}
