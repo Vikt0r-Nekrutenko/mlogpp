@@ -1,4 +1,5 @@
 #include "ast_node.hpp"
+#include "ast_function_implementation_node.hpp"
 #include <iostream>
 
 using namespace mlogpp;
