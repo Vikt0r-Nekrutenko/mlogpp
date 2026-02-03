@@ -6,9 +6,9 @@
 namespace mlogpp
 {
 
-struct ASTIfBlock : public ASTNode
+struct AST_IfNode : public ASTNode
 {
-    ASTIfBlock(const mlogpp::Token &t);
+    AST_IfNode(const mlogpp::Token &t);
     std::string label, label1;
 
     std::string outMlogCode(std::ostream &stream) override;

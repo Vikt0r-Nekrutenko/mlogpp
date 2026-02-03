@@ -12,7 +12,7 @@ class Parser
 {
     std::vector<Token> mTokens;
     std::stack<ASTNode *> blocks;
-    ASTIfBlock *lastIfBlock = nullptr;
+    AST_IfNode *lastIfBlock = nullptr;
     ASTNode *mainBlock = nullptr;
     size_t mPos = 0;
     size_t mIfLblN = 0;

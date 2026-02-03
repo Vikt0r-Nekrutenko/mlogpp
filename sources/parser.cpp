@@ -81,19 +81,19 @@ ASTNode *Parser::addBlock(ASTNode *block)
 
 void Parser::parseIfKeyword()
 {
-    mainBlock = addBlock(new ASTIfBlock(peek()));
+    mainBlock = addBlock(new AST_IfNode(peek()));
     consume();
 
     mainBlock->left = parseExpression(0);
     consume();
 
-    lastIfBlock = static_cast<ASTIfBlock *>(mainBlock);
+    lastIfBlock = static_cast<AST_IfNode *>(mainBlock);
     lastIfBlock->label = lastIfBlock->label1 = std::string("ENDIF_") + std::to_string(++mIfLblN);
 }
 
 void Parser::parseElseKeyword()
 {
-    if(lastChildAsT<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
+    if(lastChildAsT<AST_IfNode *>()->token.type() == Token::Type::KeywordIf){
         //lastIfBlock = lastChildAsT<ASTIfBlock *>();
 
         mainBlock = addBlock(new AST_ElseNode(peek()));

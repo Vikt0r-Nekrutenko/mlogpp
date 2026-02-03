@@ -1,9 +1,9 @@
 #include "ast_if_node.hpp"
 
-mlogpp::ASTIfBlock::ASTIfBlock(const Token &t)
+mlogpp::AST_IfNode::AST_IfNode(const Token &t)
     : ASTNode(t) {}
 
-std::string mlogpp::ASTIfBlock::outMlogCode(std::ostream &stream)
+std::string mlogpp::AST_IfNode::outMlogCode(std::ostream &stream)
 {
     std::string leftValue = leftNodeOutMlogCode(stream);
     stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
