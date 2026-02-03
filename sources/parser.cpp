@@ -96,11 +96,11 @@ void Parser::parseElseKeyword()
     if(lastChildAsT<ASTIfBlock *>()->token.type() == Token::Type::KeywordIf){
         //lastIfBlock = lastChildAsT<ASTIfBlock *>();
 
-        mainBlock = addBlock(new ASTElseBlock(peek()));
+        mainBlock = addBlock(new AST_ElseNode(peek()));
 
-        static_cast<ASTElseBlock *>(mainBlock)->label1 = lastIfBlock->label;
+        static_cast<AST_ElseNode *>(mainBlock)->label1 = lastIfBlock->label;
         lastIfBlock->label1 = "jump " + lastIfBlock->label1 + " always";
-        static_cast<ASTElseBlock *>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
+        static_cast<AST_ElseNode *>(mainBlock)->label = lastIfBlock->label = std::string("ELSE_") + std::to_string(mIfLblN);
     }
     consume();
     consume();
