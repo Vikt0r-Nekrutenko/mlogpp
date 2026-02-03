@@ -95,21 +95,6 @@ void ASTNode::printTree(size_t depth) const
     }
 }
 
-ASTCellAccessNode::ASTCellAccessNode(const Token &t, CellAccessType cat)
-    : ASTNode(t), accessType{cat} {
-        arg = "_" + t.value() + "Var";
-    }
-
-std::string ASTCellAccessNode::outMlogCode(std::ostream &stream)
-{
-    std::string rvalue = rightNodeOutMlogCode(stream);
-    std::string lvalue = leftNodeOutMlogCode(stream);
-    if(left)
-        stream << "set " << arg << " " << left->left->token.value() << std::endl;
-    stream << (accessType == Read ? "read " : "write ") << arg << " " << token.value() << " " << rvalue << std::endl;
-    return arg;
-}
-
 ASTReturnNode::ASTReturnNode(const Token &t)
     : ASTNode(t) {}
 

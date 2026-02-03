@@ -27,18 +27,6 @@ struct ASTNode
 
     void printTree(size_t depth) const;
 };
-struct ASTCellAccessNode : public ASTNode
-{
-    typedef enum _CellAccessType {
-        Read, Write,
-    } CellAccessType;
-    std::string arg;
-    CellAccessType accessType;
-
-    ASTCellAccessNode(const mlogpp::Token &t, CellAccessType cat);
-
-    std::string outMlogCode(std::ostream &stream) override;
-};
 
 struct ASTReturnNode : public ASTNode
 {
