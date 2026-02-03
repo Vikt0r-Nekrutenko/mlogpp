@@ -30,14 +30,6 @@ struct ASTNode
 
 
 
-struct ASTIfBlock : public ASTNode
-{
-    ASTIfBlock(const mlogpp::Token &t);
-    std::string label, label1;
-
-    std::string outMlogCode(std::ostream &stream) override;
-};
-
 struct ASTFunctionImplementationBlock : public ASTNode
 {
     std::vector<mlogpp::Token> params;

@@ -95,19 +95,6 @@ void ASTNode::printTree(size_t depth) const
     }
 }
 
-ASTIfBlock::ASTIfBlock(const Token &t)
-    : ASTNode(t) {}
-
-std::string ASTIfBlock::outMlogCode(std::ostream &stream)
-{
-    std::string leftValue = leftNodeOutMlogCode(stream);
-    stream << "jump " << label << " notEqual "  << leftValue << " true" << std::endl;
-
-    ASTNode::outMlogCode(stream);
-    stream << label1 << ":" << std::endl;
-    return "";
-}
-
 ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const Token &t)
     : ASTNode(t) {}
     
