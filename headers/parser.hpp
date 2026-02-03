@@ -3,6 +3,8 @@
 
 #include <stack>
 #include "ast_node.hpp"
+#include "ast_cell_access_node.hpp"
+#include "ast_if_node.hpp"
 
 using namespace mlogpp;
 

@@ -1,5 +1,11 @@
 #include "parser.hpp"
 #include "ast_variable.hpp"
+#include "ast_assigment.hpp"
+#include "ast_buildin_function_call.hpp"
+#include "ast_else_node.hpp"
+#include "ast_function_implementation_node.hpp"
+#include "ast_operator_node.hpp"
+#include "ast_return_node.hpp"
 #include <iostream>
 
 ASTFunctionImplementationBlock *currentFunction;
@@ -42,7 +48,7 @@ ASTNode *Parser::parsePrimary()
         return parseFunctionCall(true);
     }
     if(peek().type() == Token::Type::CellAccess) {
-        return parseCellAccess();
+        return (ASTCellAccessNode*)parseCellAccess();
     }
     /*if(peek().type() == Token::Type::Assigment) {
         return parseAssigment();
