@@ -1,9 +1,9 @@
 #include "ast_function_implementation_node.hpp"
 
-mlogpp::ASTFunctionImplementationBlock::ASTFunctionImplementationBlock(const Token &t)
+mlogpp::AST_FunctionImplementationNode::AST_FunctionImplementationNode(const Token &t)
     : ASTNode(t) {}
 
-std::string mlogpp::ASTFunctionImplementationBlock::outMlogCode(std::ostream &stream)
+std::string mlogpp::AST_FunctionImplementationNode::outMlogCode(std::ostream &stream)
 {
     for(auto ch : childs)
         ch->outMlogCode(stream);

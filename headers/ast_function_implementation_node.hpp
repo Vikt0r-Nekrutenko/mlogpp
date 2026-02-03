@@ -6,11 +6,11 @@
 namespace mlogpp
 {
 
-struct ASTFunctionImplementationBlock : public ASTNode
+struct AST_FunctionImplementationNode : public ASTNode
 {
     std::vector<mlogpp::Token> params;
     std::string label = "ENDFUNCTION_";
-    ASTFunctionImplementationBlock(const mlogpp::Token &t);
+    AST_FunctionImplementationNode(const mlogpp::Token &t);
     std::string outMlogCode(std::ostream &stream) override;
 };
 

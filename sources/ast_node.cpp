@@ -74,7 +74,7 @@ void ASTNode::printTree(size_t depth) const
 
     std::cout << (left != nullptr ? " -> " : "") << "[" << token.value() << "]";
     if(token.type() == Token::Type::KeywordFunction) {
-        auto ft = static_cast<const ASTFunctionImplementationBlock*>(this);
+        auto ft = static_cast<const AST_FunctionImplementationNode*>(this);
         for(auto p : ft->params)
             std::cout << p.value() << " ";
     }

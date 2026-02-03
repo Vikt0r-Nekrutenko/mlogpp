@@ -8,7 +8,7 @@ namespace mlogpp
 
 struct ASTReturnNode : public ASTNode
 {
-    ASTFunctionImplementationBlock* function = nullptr;
+    AST_FunctionImplementationNode* function = nullptr;
     ASTReturnNode(const mlogpp::Token &t);
     std::string outMlogCode(std::ostream &stream) override;
 };

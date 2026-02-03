@@ -8,7 +8,7 @@
 #include "ast_return_node.hpp"
 #include <iostream>
 
-ASTFunctionImplementationBlock *currentFunction;
+AST_FunctionImplementationNode *currentFunction;
 
 Token Parser::peek() { if(mPos >= mTokens.size()) throw "out of tokens range: " + std::to_string(mPos); return mTokens[mPos]; }
 
@@ -127,7 +127,7 @@ void Parser::parseBlockClose()
     mainBlock = blocks.top();
     std::cout << "] | Now: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value() << "]" << std::endl;
     if(mainBlock->token.type() == Token::Type::FunctionName)
-        currentFunction = (ASTFunctionImplementationBlock*)mainBlock;
+        currentFunction = (AST_FunctionImplementationNode*)mainBlock;
     consume();
 }
 
@@ -192,7 +192,7 @@ ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
 {
     consume(); // pass 'function' keyword
     auto functionName = consume(); // and pass '('
-    auto newBlock = new ASTFunctionImplementationBlock(functionName);
+    auto newBlock = new AST_FunctionImplementationNode(functionName);
     currentFunction = newBlock;
     newBlock->label += functionName.value();
     consume();
@@ -245,7 +245,7 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     mPos = funcPos;
     //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
     
-    ASTFunctionImplementationBlock *fib = (ASTFunctionImplementationBlock*)parseFunctionImplementation(callFromExpression);
+    AST_FunctionImplementationNode *fib = (AST_FunctionImplementationNode*)parseFunctionImplementation(callFromExpression);
     //consume(); // pass 'function'
     //consume(); // pass function name
     //consume(); // pass (
