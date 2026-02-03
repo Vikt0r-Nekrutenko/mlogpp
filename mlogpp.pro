@@ -14,6 +14,7 @@ DEPENDPATH += \
         sources/ \
 
 HEADERS += \
+        headers/ast_assigment.hpp \
         headers/ast_node.hpp \
         headers/ast_variable.hpp \
         headers/parser.hpp \
@@ -21,6 +22,7 @@ HEADERS += \
         headers/tokenizer.hpp \
         
 SOURCES += \
+    sources/ast_assigment.cpp \
     sources/ast_node.cpp \
     sources/ast_variable.cpp \
     sources/parser.cpp \
