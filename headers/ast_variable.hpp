@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_Variable : public ASTNode
+struct AST_Variable : public AST_Node
 {
     AST_Variable(const Token &t);
     AST_Variable(size_t lineNumber, const std::string &value);
@@ -18,7 +18,7 @@ using AST_Number = AST_Variable;
 using AST_Argument = AST_Variable;
 using AST_Parameter = AST_Variable;
 
-struct AST_String : public ASTNode
+struct AST_String : public AST_Node
 {
     AST_String(const Token &t);
 

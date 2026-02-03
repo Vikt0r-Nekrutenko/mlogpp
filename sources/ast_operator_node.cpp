@@ -1,7 +1,7 @@
 #include "ast_operator_node.hpp"
 
 mlogpp::AST_OperatorNode::AST_OperatorNode(const Token &t)
-    : ASTNode(t) {}
+    : AST_Node(t) {}
 
 std::string mlogpp::AST_OperatorNode::outMlogCode(std::ostream &stream)
 {

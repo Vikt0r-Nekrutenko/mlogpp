@@ -2,10 +2,10 @@
 
 
 mlogpp::AST_Variable::AST_Variable(const Token &t)
-    : ASTNode(t) {}
+    : AST_Node(t) {}
 
 mlogpp::AST_Variable::AST_Variable(size_t lineNumber, const std::string &value)
-    : ASTNode({lineNumber, value, Token::Type::Variable}) {}
+    : AST_Node({lineNumber, value, Token::Type::Variable}) {}
 
 std::string mlogpp::AST_Variable::outMlogCode(std::ostream &stream)
 {
@@ -13,7 +13,7 @@ std::string mlogpp::AST_Variable::outMlogCode(std::ostream &stream)
 }
 
 mlogpp::AST_String::AST_String(const Token &t)
-    :ASTNode(t) {}
+    :AST_Node(t) {}
 
 std::string mlogpp::AST_String::outMlogCode(std::ostream &stream)
 {

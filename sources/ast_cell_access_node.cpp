@@ -1,7 +1,7 @@
 #include "ast_cell_access_node.hpp"
 
 mlogpp::AST_CellAccessNode::AST_CellAccessNode(const Token &t, CellAccessType cat)
-    : ASTNode(t), accessType{cat} {
+    : AST_Node(t), accessType{cat} {
     arg = "_" + t.value() + "Var";
 }
 

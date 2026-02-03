@@ -14,7 +14,7 @@ Token Parser::peek() { if(mPos >= mTokens.size()) throw "out of tokens range: " 
 
 Token Parser::consume() { return mTokens[mPos++]; }
 
-ASTNode *Parser::parseExpression(int minPrec)
+AST_Node *Parser::parseExpression(int minPrec)
 {
     auto left = parsePrimary();
     while(mPos < mTokens.size() &&
@@ -39,7 +39,7 @@ ASTNode *Parser::parseExpression(int minPrec)
     return left;
 }
 
-ASTNode *Parser::parsePrimary()
+AST_Node *Parser::parsePrimary()
 {
     if(peek().type() == Token::Type::BuildInFunctionCall) {
         return parseBuildInFunctionCall(true);
@@ -57,7 +57,7 @@ ASTNode *Parser::parsePrimary()
     if(t.value() == "(" || t.value() == "[") {
         return parseExpression(0);
     }
-    return new ASTNode(t);
+    return new AST_Node(t);
 }
 
 size_t Parser::findFunctionByName(const std::string &name)
@@ -70,7 +70,7 @@ size_t Parser::findFunctionByName(const std::string &name)
     return mPos;
 }
 
-ASTNode *Parser::addBlock(ASTNode *block)
+AST_Node *Parser::addBlock(AST_Node *block)
 {
     std::cout << "\tNow: [" << mainBlock->token.lineNumber() << ":" << mainBlock->token.value();
     mainBlock->childs.push_back(block);
@@ -109,9 +109,9 @@ void Parser::parseElseKeyword()
 void Parser::parseBlockOpen()
 {
     if(mainBlock != nullptr) {
-        mainBlock = addBlock(new ASTNode(peek()));
+        mainBlock = addBlock(new AST_Node(peek()));
     } else {
-        mainBlock = new ASTNode(peek());
+        mainBlock = new AST_Node(peek());
         blocks.push(mainBlock);
     }
     consume();
@@ -131,11 +131,11 @@ void Parser::parseBlockClose()
     consume();
 }
 
-ASTNode *Parser::parseAssigment()
+AST_Node *Parser::parseAssigment()
 {
     auto tkn = peek().type() == Token::Type::Variable ? consume() : Token{peek().lineNumber(), "_", Token::Type::Variable};
     auto left = new AST_Variable(tkn); //var
-    auto root = new ASTNode(consume()); //assigment
+    auto root = new AST_Node(consume()); //assigment
 
     root->left = std::move(left);
     root->right = parseExpression(0);
@@ -148,7 +148,7 @@ ASTNode *Parser::parseAssigment()
 void Parser::parseMlogKeyword()
 {
     consume();
-    auto mlog = new ASTNode(consume());
+    auto mlog = new AST_Node(consume());
     mainBlock->childs.push_back(mlog);
 }
 
@@ -188,7 +188,7 @@ AST_CellAccessNode *Parser::parseCellAccess()
     //return root;
 }
 
-ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
+AST_Node *Parser::parseFunctionImplementation(bool callFromExpression)
 {
     consume(); // pass 'function' keyword
     auto functionName = consume(); // and pass '('
@@ -215,13 +215,13 @@ ASTNode *Parser::parseFunctionImplementation(bool callFromExpression)
     return newBlock;
 }
 
-ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
+AST_Node *Parser::parseBuildInFunctionCall(bool callFromExpression)
 {
-    auto node = new ASTNode(consume()); // pass function name
+    auto node = new AST_Node(consume()); // pass function name
     consume(); // pass (
     while(peek().value() != ")") {
         
-        auto argument = new ASTNode(peek());
+        auto argument = new AST_Node(peek());
         node->childs.push_back(argument);
         consume();
     }
@@ -231,7 +231,7 @@ ASTNode *Parser::parseBuildInFunctionCall(bool callFromExpression)
     return node;
 }
 
-ASTNode *Parser::parseFunctionCall(bool callFromExpression)
+AST_Node *Parser::parseFunctionCall(bool callFromExpression)
 {
     auto callPos = mPos;
     auto funcPos = findFunctionByName(peek().value());
@@ -253,9 +253,9 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
     //std::cerr<<"\tCurrent token: "<<peek().info()<<std::endl;
     auto func = fib;
     for(size_t i = 0; i < arguments.size(); ++i) {
-        auto argToParamAssigment = new ASTNode({0, "=", Token::Type::Assigment});
-        argToParamAssigment->left = new ASTNode(func->params.at(i));
-        argToParamAssigment->right = new ASTNode(arguments.at(i));
+        auto argToParamAssigment = new AST_Node({0, "=", Token::Type::Assigment});
+        argToParamAssigment->left = new AST_Node(func->params.at(i));
+        argToParamAssigment->right = new AST_Node(arguments.at(i));
         func->childs.push_back(argToParamAssigment);
         //consume(); // jump to next argument
     }
@@ -273,7 +273,7 @@ ASTNode *Parser::parseFunctionCall(bool callFromExpression)
 
 Parser::Parser(const std::vector<Token> &t) : mTokens{t} {}
 
-ASTNode *Parser::parse()
+AST_Node *Parser::parse()
 {
     if(mainBlock == nullptr && blocks.empty()) {
         mPos = findFunctionByName("main");

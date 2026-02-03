@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_BuildInFunctionCall : public ASTNode
+struct AST_BuildInFunctionCall : public AST_Node
 {
     AST_BuildInFunctionCall(const Token &t);
 

@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_ReturnNode : public ASTNode
+struct AST_ReturnNode : public AST_Node
 {
     AST_FunctionImplementationNode* function = nullptr;
     AST_ReturnNode(const mlogpp::Token &t);

@@ -11,9 +11,9 @@ using namespace mlogpp;
 class Parser
 {
     std::vector<Token> mTokens;
-    std::stack<ASTNode *> blocks;
+    std::stack<AST_Node *> blocks;
     AST_IfNode *lastIfBlock = nullptr;
-    ASTNode *mainBlock = nullptr;
+    AST_Node *mainBlock = nullptr;
     size_t mPos = 0;
     size_t mIfLblN = 0;
 
@@ -23,13 +23,13 @@ class Parser
 
     Token consume();
 
-    ASTNode *parseExpression(int minPrec);
+    AST_Node *parseExpression(int minPrec);
 
-    ASTNode *parsePrimary();
+    AST_Node *parsePrimary();
 
     size_t findFunctionByName(const std::string &name);
 
-    ASTNode *addBlock(ASTNode *block);
+    AST_Node *addBlock(AST_Node *block);
 
     void parseIfKeyword();
 
@@ -39,23 +39,23 @@ class Parser
 
     void parseBlockClose();
 
-    ASTNode *parseAssigment();
+    AST_Node *parseAssigment();
 
     void parseMlogKeyword();
 
     AST_CellAccessNode *parseCellAccess();
 
-    ASTNode *parseFunctionImplementation(bool callFromExpression = false);
+    AST_Node *parseFunctionImplementation(bool callFromExpression = false);
     
-    ASTNode *parseBuildInFunctionCall(bool callFromExpression = false);
+    AST_Node *parseBuildInFunctionCall(bool callFromExpression = false);
     
-    ASTNode *parseFunctionCall(bool callFromExpression = false);
+    AST_Node *parseFunctionCall(bool callFromExpression = false);
 
 public:
 
     Parser(const std::vector<Token> &t);
 
-    ASTNode *parse();
+    AST_Node *parse();
 };
 
 #endif // PARSER_HPP

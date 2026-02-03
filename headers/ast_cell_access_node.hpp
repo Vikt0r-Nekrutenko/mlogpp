@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_CellAccessNode : public ASTNode
+struct AST_CellAccessNode : public AST_Node
 {
     typedef enum _CellAccessType {
         Read, Write,

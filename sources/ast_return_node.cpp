@@ -1,7 +1,7 @@
 #include "ast_return_node.hpp"
 
 mlogpp::AST_ReturnNode::AST_ReturnNode(const Token &t)
-    : ASTNode(t) {}
+    : AST_Node(t) {}
 
 std::string mlogpp::AST_ReturnNode::outMlogCode(std::ostream &stream)
 {

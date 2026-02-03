@@ -4,11 +4,11 @@
 
 using namespace mlogpp;
 
-size_t ASTNode::tempVariableN = 0;
+size_t AST_Node::tempVariableN = 0;
 
-ASTNode::ASTNode(const Token &t) : token(Token(t.lineNumber(), t.value(), t.type())) {}
+AST_Node::AST_Node(const Token &t) : token(Token(t.lineNumber(), t.value(), t.type())) {}
 
-ASTNode::~ASTNode()
+AST_Node::~AST_Node()
 {
     delete left;
     delete right;
@@ -16,21 +16,21 @@ ASTNode::~ASTNode()
         delete childs[i];
 }
 
-std::string ASTNode::leftNodeOutMlogCode(std::ostream &stream)
+std::string AST_Node::leftNodeOutMlogCode(std::ostream &stream)
 {
     if(left == nullptr)
         return "";
     return left->outMlogCode(stream);
 }
 
-std::string ASTNode::rightNodeOutMlogCode(std::ostream &stream)
+std::string AST_Node::rightNodeOutMlogCode(std::ostream &stream)
 {
     if(right == nullptr)
         return "";
     return right->outMlogCode(stream);
 }
 
-std::string ASTNode::outMlogCode(std::ostream &stream)
+std::string AST_Node::outMlogCode(std::ostream &stream)
 {
     if(token.type() == mlogpp::Token::Type::MlogValue)
         stream << token.value() << std::endl;
@@ -66,7 +66,7 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
     return "";
 }
 
-void ASTNode::printTree(size_t depth) const
+void AST_Node::printTree(size_t depth) const
 {
     if(left != nullptr) {
         left->printTree(depth);

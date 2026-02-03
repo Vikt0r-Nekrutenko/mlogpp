@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_IfNode : public ASTNode
+struct AST_IfNode : public AST_Node
 {
     AST_IfNode(const mlogpp::Token &t);
     std::string label, label1;

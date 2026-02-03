@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct AST_FunctionImplementationNode : public ASTNode
+struct AST_FunctionImplementationNode : public AST_Node
 {
     std::vector<mlogpp::Token> params;
     std::string label = "ENDFUNCTION_";

@@ -2,7 +2,7 @@
 
 
 mlogpp::AST_BuildInFunctionCall::AST_BuildInFunctionCall(const Token &t)
-    :ASTNode(t){}
+    :AST_Node(t){}
 
 std::string mlogpp::AST_BuildInFunctionCall::outMlogCode(std::ostream &stream)
 {

@@ -7,7 +7,7 @@
 namespace mlogpp
 {
 
-struct AST_Assigment : public ASTNode
+struct AST_Assigment : public AST_Node
 {
     AST_Assigment(const Token &t);
 

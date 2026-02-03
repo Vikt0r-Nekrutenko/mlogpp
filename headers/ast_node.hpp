@@ -7,17 +7,17 @@
 
 namespace mlogpp {
 
-struct ASTNode
+struct AST_Node
 {
-    std::vector<ASTNode*> childs;
+    std::vector<AST_Node*> childs;
     mlogpp::Token token;
-    ASTNode *left = nullptr;
-    ASTNode *right = nullptr;
+    AST_Node *left = nullptr;
+    AST_Node *right = nullptr;
     static size_t tempVariableN;
 
-    ASTNode(const mlogpp::Token &t);
+    AST_Node(const mlogpp::Token &t);
 
-    virtual ~ASTNode();
+    virtual ~AST_Node();
 
     std::string leftNodeOutMlogCode(std::ostream &stream);
 

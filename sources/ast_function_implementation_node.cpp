@@ -1,7 +1,7 @@
 #include "ast_function_implementation_node.hpp"
 
 mlogpp::AST_FunctionImplementationNode::AST_FunctionImplementationNode(const Token &t)
-    : ASTNode(t) {}
+    : AST_Node(t) {}
 
 std::string mlogpp::AST_FunctionImplementationNode::outMlogCode(std::ostream &stream)
 {
