@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include "ast_variable.hpp"
 #include <iostream>
 
 ASTFunctionImplementationBlock *currentFunction;
@@ -127,7 +128,7 @@ void Parser::parseBlockClose()
 ASTNode *Parser::parseAssigment()
 {
     auto tkn = peek().type() == Token::Type::Variable ? consume() : Token{peek().lineNumber(), "_", Token::Type::Variable};
-    auto left = new ASTNode(tkn); //var
+    auto left = new AST_Variable(tkn); //var
     auto root = new ASTNode(consume()); //assigment
 
     root->left = std::move(left);
@@ -308,7 +309,7 @@ ASTNode *Parser::parse()
         auto node = new ASTReturnNode(consume());
         node->function = currentFunction;
         std::string retvarname = "_retVar_" + node->function->token.value();
-        node->left = new ASTNode({peek().lineNumber(), retvarname, Token::Type::Variable});
+        node->left = new AST_Variable({peek().lineNumber(), retvarname});
         node->right = parseExpression(0);
         currentFunction->childs.push_back(node);
     } 
