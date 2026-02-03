@@ -16,6 +16,7 @@ DEPENDPATH += \
 HEADERS += \
         headers/ast_assigment.hpp \
         headers/ast_buildin_function_call.hpp \
+        headers/ast_function_implementation_node.hpp \
         headers/ast_if_node.hpp \
         headers/ast_node.hpp \
         headers/ast_operator_node.hpp \
@@ -27,6 +28,7 @@ HEADERS += \
 SOURCES += \
     sources/ast_assigment.cpp \
     sources/ast_buildin_function_call.cpp \
+    sources/ast_function_implementation_node.cpp \
     sources/ast_node.cpp \
     sources/ast_operator_node.cpp \
     sources/ast_variable.cpp \
