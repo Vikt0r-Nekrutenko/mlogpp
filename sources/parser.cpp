@@ -312,7 +312,7 @@ ASTNode *Parser::parse()
     } else if(peek().type() == Token::Type::Argument || peek().type() == Token::Type::Parameter) {
         //consume();
     } else if(peek().type() == Token::Type::ReturnKeyword) {
-        auto node = new ASTReturnNode(consume());
+        auto node = new AST_ReturnNode(consume());
         node->function = currentFunction;
         std::string retvarname = "_retVar_" + node->function->token.value();
         node->left = new AST_Variable({peek().lineNumber(), retvarname});

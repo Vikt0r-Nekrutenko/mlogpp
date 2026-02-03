@@ -1,9 +1,9 @@
 #include "ast_return_node.hpp"
 
-mlogpp::ASTReturnNode::ASTReturnNode(const Token &t)
+mlogpp::AST_ReturnNode::AST_ReturnNode(const Token &t)
     : ASTNode(t) {}
 
-std::string mlogpp::ASTReturnNode::outMlogCode(std::ostream &stream)
+std::string mlogpp::AST_ReturnNode::outMlogCode(std::ostream &stream)
 {
     std::string lvalue = leftNodeOutMlogCode(stream);
     std::string value = rightNodeOutMlogCode(stream);

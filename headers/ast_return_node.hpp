@@ -6,10 +6,10 @@
 namespace mlogpp
 {
 
-struct ASTReturnNode : public ASTNode
+struct AST_ReturnNode : public ASTNode
 {
     AST_FunctionImplementationNode* function = nullptr;
-    ASTReturnNode(const mlogpp::Token &t);
+    AST_ReturnNode(const mlogpp::Token &t);
     std::string outMlogCode(std::ostream &stream) override;
 };
 
