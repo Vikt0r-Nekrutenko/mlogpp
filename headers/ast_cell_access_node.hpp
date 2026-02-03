@@ -6,7 +6,7 @@
 namespace mlogpp
 {
 
-struct ASTCellAccessNode : public ASTNode
+struct AST_CellAccessNode : public ASTNode
 {
     typedef enum _CellAccessType {
         Read, Write,
@@ -14,7 +14,7 @@ struct ASTCellAccessNode : public ASTNode
     std::string arg;
     CellAccessType accessType;
 
-    ASTCellAccessNode(const mlogpp::Token &t, CellAccessType cat);
+    AST_CellAccessNode(const mlogpp::Token &t, CellAccessType cat);
 
     std::string outMlogCode(std::ostream &stream) override;
 };

@@ -43,7 +43,7 @@ class Parser
 
     void parseMlogKeyword();
 
-    ASTCellAccessNode *parseCellAccess();
+    AST_CellAccessNode *parseCellAccess();
 
     ASTNode *parseFunctionImplementation(bool callFromExpression = false);
     

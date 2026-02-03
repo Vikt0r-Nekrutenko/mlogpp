@@ -1,11 +1,11 @@
 #include "ast_cell_access_node.hpp"
 
-mlogpp::ASTCellAccessNode::ASTCellAccessNode(const Token &t, CellAccessType cat)
+mlogpp::AST_CellAccessNode::AST_CellAccessNode(const Token &t, CellAccessType cat)
     : ASTNode(t), accessType{cat} {
     arg = "_" + t.value() + "Var";
 }
 
-std::string mlogpp::ASTCellAccessNode::outMlogCode(std::ostream &stream)
+std::string mlogpp::AST_CellAccessNode::outMlogCode(std::ostream &stream)
 {
     std::string rvalue = rightNodeOutMlogCode(stream);
     std::string lvalue = leftNodeOutMlogCode(stream);
