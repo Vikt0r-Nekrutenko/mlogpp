@@ -35,8 +35,8 @@ std::string ASTNode::outMlogCode(std::ostream &stream)
         stream << token.value() << std::endl;
     else if(token.type() == Token::Token::Type::String)
         return "\"" + token.value() + "\"";
-    // else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable || token.type() == Token::Type::Argument)
-    //     return token.value();
+    else if(token.type() == Token::Type::Number || token.type() == Token::Type::Variable || token.type() == Token::Type::Argument)
+        return token.value();
     else if(token.type() == Token::Type::Assigment) {
         std::string value = rightNodeOutMlogCode(stream);
         stream << "set " << left->token.value() << " " << value << std::endl;

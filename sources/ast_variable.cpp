@@ -11,3 +11,11 @@ std::string mlogpp::AST_Variable::outMlogCode(std::ostream &stream)
 {
     return token.value();
 }
+
+mlogpp::AST_String::AST_String(const Token &t)
+    :ASTNode(t) {}
+
+std::string mlogpp::AST_String::outMlogCode(std::ostream &stream)
+{
+    return "\"" + token.value() + "\"";
+}

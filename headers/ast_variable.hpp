@@ -18,6 +18,13 @@ using AST_Number = AST_Variable;
 using AST_Argument = AST_Variable;
 using AST_Parameter = AST_Variable;
 
+struct AST_String : public ASTNode
+{
+    AST_String(const Token &t);
+
+    std::string outMlogCode(std::ostream &stream) override;
+};
+
 }
 
 #endif // AST_VARIABLE_HPP
