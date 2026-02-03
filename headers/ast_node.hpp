@@ -28,12 +28,7 @@ struct ASTNode
     void printTree(size_t depth) const;
 };
 
-struct ASTOperatorNode : public ASTNode
-{
-    ASTOperatorNode(const mlogpp::Token &t);
 
-    std::string outMlogCode(std::ostream &stream) override;
-};
 
 struct ASTIfBlock : public ASTNode
 {
