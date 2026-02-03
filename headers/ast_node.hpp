@@ -28,13 +28,6 @@ struct ASTNode
     void printTree(size_t depth) const;
 };
 
-struct ASTReturnNode : public ASTNode
-{
-    ASTFunctionImplementationBlock* function = nullptr;
-    ASTReturnNode(const mlogpp::Token &t);
-    std::string outMlogCode(std::ostream &stream) override;
-};
-
 }
 
 #endif // AST_NODE_HPP

@@ -22,6 +22,7 @@ HEADERS += \
         headers/ast_if_node.hpp \
         headers/ast_node.hpp \
         headers/ast_operator_node.hpp \
+        headers/ast_return_node.hpp \
         headers/ast_variable.hpp \
         headers/parser.hpp \
         headers/syntax_error_handler.hpp \
@@ -35,6 +36,7 @@ SOURCES += \
     sources/ast_function_implementation_node.cpp \
     sources/ast_node.cpp \
     sources/ast_operator_node.cpp \
+    sources/ast_return_node.cpp \
     sources/ast_variable.cpp \
     sources/ast_if_node.cpp \
     sources/parser.cpp \
