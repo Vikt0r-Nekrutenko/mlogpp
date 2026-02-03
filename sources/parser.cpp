@@ -31,7 +31,7 @@ ASTNode *Parser::parseExpression(int minPrec)
         operatr.type() == Token::Type::CellAccess) {
             break;
         }
-        auto node = new ASTOperatorNode(operatr);
+        auto node = new AST_OperatorNode(operatr);
         node->left = std::move(left);
         node->right = parseExpression(operatr.precedence() + 1);
         left = std::move(node);

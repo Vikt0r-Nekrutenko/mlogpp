@@ -1,9 +1,9 @@
 #include "ast_operator_node.hpp"
 
-mlogpp::ASTOperatorNode::ASTOperatorNode(const Token &t)
+mlogpp::AST_OperatorNode::AST_OperatorNode(const Token &t)
     : ASTNode(t) {}
 
-std::string mlogpp::ASTOperatorNode::outMlogCode(std::ostream &stream)
+std::string mlogpp::AST_OperatorNode::outMlogCode(std::ostream &stream)
 {
     std::string leftValue = leftNodeOutMlogCode(stream);
     std::string rightValue = rightNodeOutMlogCode(stream);

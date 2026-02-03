@@ -7,9 +7,9 @@
 namespace mlogpp
 {
 
-struct ASTOperatorNode : public ASTNode
+struct AST_OperatorNode : public ASTNode
 {
-    ASTOperatorNode(const mlogpp::Token &t);
+    AST_OperatorNode(const mlogpp::Token &t);
 
     std::string outMlogCode(std::ostream &stream) override;
 };
